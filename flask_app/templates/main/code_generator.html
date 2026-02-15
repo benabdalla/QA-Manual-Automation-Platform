@@ -341,7 +341,7 @@
                 
                 if (agent.llm_model_name) {
                     const modelOption = document.createElement('option');
-                    modelOption.value = agent.llm_model_name;
+                    modelOption.value = agent.llm_provider;
                     modelOption.textContent = agent.llm_model_name;
                     modelOption.selected = true;
                     modelSelect.appendChild(modelOption);
@@ -387,7 +387,7 @@
                 if (modelSelect.options.length === 1) { // Only if not already populated
                     data.agent_settings.forEach(setting => {
                         const option = document.createElement('option');
-                        option.value = setting.llm_model_name;
+                        option.value = setting.llm_provider;
                         option.textContent = setting.llm_model_name;
                         option.dataset.provider = setting.llm_provider;
                         modelSelect.appendChild(option);
@@ -506,155 +506,376 @@
             createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Create Agent & Generate';
         }
     }
+async function generateCode() {
+    const frameworkSelect = document.getElementById('frameworkSelect');
+    const languageSelect = document.getElementById('languageSelect');
+    const promptTextarea = document.getElementById('promptTextarea');
+    const modelSelect = document.getElementById('modelSelect');
+    const apiKeyDisplay = document.getElementById('apiKeyDisplay');
+    const apiKeySelect = document.getElementById('apiKeySelect');
+    
+    // Check if elements exist
+    if (!frameworkSelect || !languageSelect || !promptTextarea || !modelSelect) {
+        showError('Error: Required form elements not found');
+        return;
+    }
 
-    async function generateCode() {
-        const frameworkSelect = document.getElementById('frameworkSelect');
-        const languageSelect = document.getElementById('languageSelect');
-        const promptTextarea = document.getElementById('promptTextarea');
-        const modelSelect = document.getElementById('modelSelect');
-        const apiKeyDisplay = document.getElementById('apiKeyDisplay');
-        const apiKeySelect = document.getElementById('apiKeySelect');
-        const agentSelect = document.getElementById('agentSelect');
-        
-        // Check if elements exist
-        if (!frameworkSelect || !languageSelect || !promptTextarea || !modelSelect) {
-            showError('Error: Required form elements not found');
-            return;
-        }
+    const framework = frameworkSelect.value;
+    const frameworkText = frameworkSelect.options[frameworkSelect.selectedIndex].text;
+    const language = languageSelect.value;
+    const languageText = languageSelect.options[languageSelect.selectedIndex].text;
+    const scenarioContent = promptTextarea.value;
+    const model = modelSelect.value;
+    const modelText = modelSelect.options[modelSelect.selectedIndex].text;
+    const apiKeyDisplayVal = apiKeyDisplay ? apiKeyDisplay.value : '';
+    const apiKey = apiKeySelect ? apiKeySelect.value : '';
 
-        const framework = frameworkSelect.value;
-        const frameworkText = frameworkSelect.options[frameworkSelect.selectedIndex].text;
-        const language = languageSelect.value;
-        const languageText = languageSelect.options[languageSelect.selectedIndex].text;
-        const scenarioContent = promptTextarea.value;
-        const model = modelSelect.value;
-        const modelText = modelSelect.options[modelSelect.selectedIndex].text;
-        const apiKeyDisplayVal = apiKeyDisplay ? apiKeyDisplay.value : '';
-        const apiKey = apiKeySelect ? apiKeySelect.value : '';
-        const agentId = agentSelect ? agentSelect.value : '';
+    // Validation
+    if (!framework) {
+        showError('Please select a framework');
+        return;
+    }
+    if (!language) {
+        showError('Please select a language');
+        return;
+    }
+    if (!scenarioContent.trim()) {
+        showError('Please enter a test scenario or description');
+        return;
+    }
+    if (!model) {
+        showError('Please select an LLM model or agent');
+        return;
+    }
+    if (!apiKey) {
+        showError('Please provide an API key');
+        return;
+    }
 
-        // Validation
-        if (!framework) {
-            showError('Please select a framework');
-            return;
-        }
-        if (!language) {
-            showError('Please select a language');
-            return;
-        }
-        if (!scenarioContent.trim()) {
-            showError('Please enter a test scenario or description');
-            return;
-        }
-        if (!model) {
-            showError('Please select an LLM model or agent');
-            return;
-        }
-
-        // Build comprehensive prompt with all context
-        const comprehensivePrompt = `
+// Build robust test code generation prompt with POM and step definitions
+const comprehensivePrompt = `
 === TEST CODE GENERATION REQUEST ===
 
-**Configuration:**
+**Configuration**
 - Testing Framework: ${frameworkText}
 - Programming Language: ${languageText}
 - LLM Model: ${modelText}
-- API Key: ${apiKeyDisplayVal}
 
-**Test Scenario / Gherkin:**
+**Test Scenario / Gherkin**
 ${scenarioContent}
 
-**Task:**
-Generate ${language.toUpperCase()} test code for the ${frameworkText} framework based on the scenario above.
-The code should:
-1. Follow ${frameworkText} best practices
-2. Be written in ${languageText}
-3. Implement the scenario described above
-4. Include proper error handling and assertions
-5. Be production-ready and well-commented
+**Task**
+Generate **complete, production-ready test code** in ${languageText} for the ${frameworkText} framework, implementing the scenario above. Ensure the code:
 
-Please generate the complete test code:
+1. Implements **step definitions for each Gherkin step individually**.
+2. Follows the **Page Object Model (POM) design pattern** for maintainability.
+3. Follows ${frameworkText} best practices.
+4. Includes proper **error handling, assertions, and validations**.
+5. Includes **well-commented code** explaining the logic and each test step.
+6. Is fully executable, formatted for readability, and production-ready.
+7. Avoids placeholders; provide concrete examples wherever possible.
+
+**Code Organization / Output**
+- Create separate Page Object classes for relevant pages/components.
+- Link step definitions to their corresponding Gherkin steps clearly.
+- Include import statements, setup/teardown, and any necessary configuration.
+- Only provide code; no explanations unless explicitly requested.
+
+Please generate the **complete test code** now, **step by step**, using POM and covering all Gherkin steps:
 `;
 
-        // Show loading
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const generateBtn = document.getElementById('generateBtn');
-        const errorAlert = document.getElementById('errorAlert');
+
+    // Show loading
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const generateBtn = document.getElementById('generateBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    
+    if (loadingSpinner) loadingSpinner.style.display = 'block';
+    if (generateBtn) {
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Generating...';
+    }
+    if (errorAlert) errorAlert.style.display = 'none';
+
+    try {
+        console.log("📤 Starting code generation...");
         
-        if (loadingSpinner) loadingSpinner.style.display = 'block';
-        if (generateBtn) generateBtn.disabled = true;
-        if (errorAlert) errorAlert.style.display = 'none';
+        // Extract provider and model
+        let llmProvider = modelText;
+        let modelName = model;
+        
+        if (model.includes(':')) {
+            const parts = model.split(':');
+            llmProvider = parts[0].toLowerCase();
+            modelName = parts.slice(1).join(':');
+        } else {
+            if (model.includes('claude')) llmProvider = 'anthropic';
+            else if (model.includes('gpt')) llmProvider = 'openai';
+            else if (model.includes('google')) llmProvider = modelText;
+            else if (model.includes('mistral')) llmProvider = 'mistral';
+            else if (model.includes('command')) llmProvider = 'cohere';
+            else if (model.includes('llama')) llmProvider = 'groq';
+        }
+        
+        console.log("🤖 Provider:", llmProvider, "| Model:", modelName);
+        
+        // Call with retry
+        const generatedCode = await callAIWithRetry(
+            llmProvider,
+            modelName,
+            apiKey,
+            comprehensivePrompt
+        );
 
-        try {
-            console.log("📤 Sending code generation request with:");
-            console.log("  Framework:", frameworkText);
-            console.log("  Language:", languageText);
-            console.log("  Model:", modelText);
-            console.log("  API Key Provider:", apiKeyDisplayVal.split(':')[0]);
-            console.log("  Scenario length:", scenarioContent.length, "characters");
-            
-            const requestBody = {
-                framework: framework,
-                language: language,
-                scenario: scenarioContent,
-                model: model,
-                api_key: apiKey || null,
-                agent_id: agentId || null,
-                context: {
-                    framework_name: frameworkText,
-                    language_name: languageText,
-                    model_name: modelText,
-                    api_key_provider: apiKeyDisplayVal.split(':')[0]
-                }
-            };
-            
-            console.log("📋 Request body:", JSON.stringify(requestBody, null, 2));
-            console.log("📤 Sending to /api/code-generator/generate");
-            
-            const response = await fetch('/api/code-generator/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
+        console.log("✅ Generation successful!");
 
-            console.log("📥 Response status:", response.status);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("❌ HTTP Error:", response.status, errorText);
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
-            }
+        const data = {
+            success: true,
+            generated_code: generatedCode,
+            framework: framework,
+            language: language,
+            model: modelText,
+            scenario: scenarioContent
+        };
 
-            const data = await response.json();
-            console.log("📥 Response data received");
-            console.log("  Success:", data.success);
-            console.log("  Generated code length:", data.generated_code?.length || 0, "characters");
-
-            if (data.success) {
-                console.log("✅ Code generation successful!");
-                if (data.api_error) {
-                    console.warn("⚠️ API Error (using fallback template):", data.api_error);
-                }
-                displayResults(data);
-            } else {
-                console.error("❌ Generation failed:", data.error);
-                throw new Error(data.error || 'Failed to generate code');
-            }
-        } catch (error) {
-            console.error('❌ Error during code generation:', error);
-            const errorMsg = 'Error: ' + error.message;
-            console.log("📢 Showing error:", errorMsg);
-            showError(errorMsg);
-        } finally {
-            const spinner = document.getElementById('loadingSpinner');
-            const btn = document.getElementById('generateBtn');
-            if (spinner) spinner.style.display = 'none';
-            if (btn) btn.disabled = false;
+        displayResults(data);
+        
+    } catch (error) {
+        console.error('❌ Final error:', error);
+        
+        // Format user-friendly error
+        let userMessage = '';
+        const errMsg = error.message || '';
+        
+        if (errMsg.includes('503') || errMsg.includes('UNAVAILABLE')) {
+            userMessage = `⚠️ The ${model} model is currently overloaded. Please:\n\n1. Try again in 1-2 minutes, or\n2. Select a different model (OpenAI GPT, Anthropic Claude, or Groq are usually more available)`;
+        } else if (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('API key')) {
+            userMessage = '🔑 Invalid API key. Please check your API key settings.';
+        } else if (errMsg.includes('429') || errMsg.includes('rate limit')) {
+            userMessage = '⏱️ Rate limit reached. Please wait a moment and try again.';
+        } else if (errMsg.includes('timeout')) {
+            userMessage = '⏱️ Request timed out. The AI is taking too long to respond. Please try again.';
+        } else if (errMsg.includes('not supported')) {
+            userMessage = `❌ ${errMsg}`;
+        } else {
+            userMessage = `❌ Error: ${errMsg.substring(0, 200)}`;
+        }
+        
+        showError(userMessage);
+        
+    } finally {
+        const spinner = document.getElementById('loadingSpinner');
+        const btn = document.getElementById('generateBtn');
+        if (spinner) spinner.style.display = 'none';
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Generate Code';
         }
     }
+}
 
+// ==========================================
+// RETRY LOGIC
+// ==========================================
+async function callAIWithRetry(provider, model, apiKey, prompt, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`🔄 Attempt ${attempt}/${maxRetries}`);
+            
+            const result = await iaGenerative(model,provider , apiKey, prompt);
+            console.log(`✅ Success on attempt ${attempt}!`);
+            return result;
+            
+        } catch (error) {
+            const errMsg = error.message || '';
+            console.warn(`⚠️ Attempt ${attempt} failed:`, errMsg.substring(0, 100));
+            
+            // Check if retryable
+            const is503 = errMsg.includes('503') || errMsg.includes('UNAVAILABLE');
+            const is429 = errMsg.includes('429') || errMsg.includes('rate limit');
+            const is502 = errMsg.includes('502');
+            const isTimeout = errMsg.includes('timeout');
+            
+            const isRetryable = is503 || is429 || is502 || isTimeout;
+            
+            // Don't retry on last attempt or non-retryable errors
+            if (attempt === maxRetries || !isRetryable) {
+                throw error;
+            }
+            
+            // Exponential backoff: 1s, 2s, 4s
+            const delay = Math.pow(2, attempt - 1) * 1000;
+            console.log(`⏳ Waiting ${delay/1000}s before retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+}
+
+// ==========================================
+// CORE AI FUNCTION
+// ==========================================
+async function iaGenerative(llmModel, modelName, apiKey, prompt) {
+    
+    const configs = {
+        
+        "anthropic": {
+            url: "https://api.anthropic.com/v1/messages",
+            headers: {
+                "Content-Type": "application/json",
+                "x-api-key": apiKey,
+                "anthropic-version": "2023-06-01"
+            },
+            body: {
+                model: modelName,
+                max_tokens: 4096,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.content[0].text
+        },
+        
+        "openai": {
+            url: "https://api.openai.com/v1/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.choices[0].message.content
+        },
+        
+        "google": {
+            url: `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: {
+                contents: [{ parts: [{ text: prompt }] }]
+            },
+            extract: (data) => data.candidates[0].content.parts[0].text
+        },
+        
+        "mistral": {
+            url: "https://api.mistral.ai/v1/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.choices[0].message.content
+        },
+        
+        "cohere": {
+            url: "https://api.cohere.ai/v1/chat",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                message: prompt
+            },
+            extract: (data) => data.text
+        },
+        
+        "groq": {
+            url: "https://api.groq.com/openai/v1/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.choices[0].message.content
+        },
+        
+        "perplexity": {
+            url: "https://api.perplexity.ai/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.choices[0].message.content
+        }
+    };
+    
+    const config = configs[llmModel.toLowerCase()];
+    
+    if (!config) {
+        throw new Error(`Provider "${llmModel}" not supported. Available: anthropic, openai, google, mistral, cohere, groq, perplexity`);
+    }
+    
+    // Timeout controller
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    
+    try {
+        const response = await fetch(config.url, {
+            method: "POST",
+            headers: config.headers,
+            body: JSON.stringify(config.body),
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API Error (${response.status}): ${errorText}`);
+        }
+        
+        const data = await response.json();
+        return config.extract(data);
+        
+    } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+            throw new Error('Request timeout after 60 seconds');
+        }
+        throw error;
+    }
+}
+
+// ==========================================
+// IMPROVED showError FUNCTION
+// ==========================================
+function showError(message) {
+    console.log('🔴 Showing error:', message);
+    
+    // Try to find error display elements
+    const errorMessage = document.getElementById('errorMessage');
+    const errorAlert = document.getElementById('errorAlert');
+    
+    if (errorMessage) {
+        errorMessage.textContent = message;
+        console.log('✅ Updated errorMessage element');
+    } else {
+        console.warn('⚠️ errorMessage element not found');
+    }
+    
+    if (errorAlert) {
+        errorAlert.style.display = 'block';
+        errorAlert.className = 'alert alert-danger mt-3';
+        errorAlert.innerHTML = `<strong>Error:</strong> ${message}`;
+        console.log('✅ Showed errorAlert');
+    } else {
+        console.warn('⚠️ errorAlert element not found');
+        // Fallback: use browser alert
+        alert(message);
+    }
+}
     function displayResults(data) {
         console.log("📊 Displaying results with data:", data);
         

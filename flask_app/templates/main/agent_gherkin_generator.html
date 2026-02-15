@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Agent Gherkin Generator - Ines QA Platform{% endblock %}
+{% block title %}Code Generator - Ines QA Platform{% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-5">
@@ -8,9 +8,9 @@
         <!-- Header -->
         <div class="col-12 mb-4">
             <h1 class="mb-2">
-                <i class="fas fa-robot"></i> Agent-Based Gherkin Scenario Generator
+                <i class="fas fa-code"></i>Generate Gherkin
             </h1>
-            <p class="text-muted">Generate BDD scenarios using your configured agents powered by AI</p>
+            <p class="text-muted">Generate Gherkin code from your manual scenario.</p>
         </div>
     </div>
 
@@ -18,19 +18,23 @@
         <!-- Left Column - Settings -->
         <div class="col-lg-4">
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="fas fa-cog"></i> Configuration</h5>
                 </div>
                 <div class="card-body">
                     <!-- Agent Selection -->
                     <div class="mb-3">
                         <label for="agentSelect" class="form-label">
-                            <i class="fas fa-robot"></i> Select Agent
+                            <i class="fas fa-robot"></i> Select Agent (from setting_agent table)
                         </label>
-                        <select id="agentSelect" class="form-select" onchange="loadAgentDetails()">
-                            <option value="">-- Select an Agent --</option>
+                        <!-- This dropdown will be populated with all setting_agent for the current user -->
+                        <select id="agentSelect" class="form-select">
+                            <option value="">-- Select an agent from database --</option>
                         </select>
-                        <small class="text-muted">Select an existing agent to auto-populate model and API key</small>
+                        <small class="text-muted">Select an agent from your setting_agent table to auto-populate model and API key</small>
+                        <button type="button" id="createTestAgentBtn" class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="createTestAgent()" style="display: none;">
+                            <i class="fas fa-plus"></i> Create Test Agent
+                        </button>
                     </div>
 
                     <hr>
@@ -43,7 +47,7 @@
                         <select id="modelSelect" class="form-select">
                             <option value="">Loading models...</option>
                         </select>
-                        <small class="text-muted">Select the AI model for scenario generation</small>
+                        <small class="text-muted">Select the AI model for code generation</small>
                     </div>
 
                     <!-- API Key Selection -->
@@ -59,43 +63,25 @@
                     </div>
 
                     <hr>
-
-                    <!-- Feature Name -->
-                    <div class="mb-3">
-                        <label for="featureName" class="form-label">
-                            <i class="fas fa-file-alt"></i> Feature Name
-                        </label>
-                        <input type="text" class="form-control" id="featureName" placeholder="e.g., User Login, Shopping Cart">
-                        <small class="text-muted">Name of the feature you want to test</small>
-                    </div>
-
-                    <!-- Number of Scenarios -->
-                    <div class="mb-3">
-                        <label for="scenarioCount" class="form-label">
-                            <i class="fas fa-list"></i> Number of Scenarios
-                        </label>
-                        <input type="number" class="form-control" id="scenarioCount" value="1" min="1" max="5">
-                        <small class="text-muted">How many scenarios to generate (1-5)</small>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Middle/Right Column - Prompt -->
+        <!-- Middle Column - Prompt -->
         <div class="col-lg-8">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-edit"></i> Scenario Description / Prompt</h5>
+                    <h5 class="mb-0"><i class="fas fa-edit"></i> Convert Manual Scenario to Gherkin Format</h5>
                 </div>
                 <div class="card-body">
                     <textarea 
-                        id="scenarioDescription" 
+                        id="promptTextarea" 
                         class="form-control" 
                         rows="12" 
-                        placeholder="Describe your test scenario in detail...&#10;&#10;Example:&#10;Test the user login functionality where:&#10;- User navigates to the login page&#10;- Enters valid email and password&#10;- Clicks the login button&#10;- System validates credentials&#10;- User is redirected to dashboard&#10;- User profile is displayed in the header&#10;&#10;Or provide specific test conditions you want to cover:&#10;- Valid credentials should allow login&#10;- Invalid password should show error message&#10;- Empty fields should display validation errors">
+                        placeholder="Describe your test scenario in Gherkin format or natural language...&#10;&#10;Example (Gherkin):&#10;Given I am on the login page&#10;When I enter valid credentials&#10;And I click the login button&#10;Then I should see the dashboard&#10;And the user profile should be displayed&#10;&#10;Or in natural language:&#10;Create a test that logs into the application, navigates to the dashboard, and verifies that the user profile is displayed correctly.">
                     </textarea>
                     <small class="text-muted d-block mt-2">
-                        <i class="fas fa-info-circle"></i> Provide detailed instructions for the agent to generate comprehensive Gherkin scenarios.
+                        <i class="fas fa-info-circle"></i> Convert the manual scenario to Gherkin format (Given/When/Then). Be as detailed as possible for better code generation.
                     </small>
                 </div>
             </div>
@@ -104,8 +90,8 @@
             <div class="row">
                 <div class="col-12">
                     <div class="btn-group w-100 mb-4" role="group">
-                        <button id="generateBtn" class="btn btn-success btn-lg" onclick="generateGherkin()" style="flex: 1;">
-                            <i class="fas fa-magic"></i> Generate Gherkin Scenarios
+                        <button id="generateBtn" class="btn btn-success btn-lg" onclick="generateCode()" style="flex: 1;">
+                            <i class="fas fa-magic"></i> Generate code Gherkin...
                         </button>
                     </div>
                 </div>
@@ -113,10 +99,10 @@
 
             <!-- Loading Spinner -->
             <div id="loadingSpinner" class="text-center mb-4" style="display: none;">
-                <div class="spinner-border text-success" role="status">
+                <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Generating...</span>
                 </div>
-                <p class="mt-2">Generating Gherkin scenarios...</p>
+                <p class="mt-2">Generating test code...</p>
             </div>
         </div>
     </div>
@@ -128,13 +114,13 @@
                 <div class="card-header bg-success text-white">
                     <div class="row align-items-center">
                         <div class="col">
-                            <h5 class="mb-0"><i class="fas fa-leaf"></i> Generated Gherkin Scenarios</h5>
+                            <h5 class="mb-0"><i class="fas fa-check-circle"></i> Generated Test Code</h5>
                         </div>
                         <div class="col-auto">
-                            <button class="btn btn-sm btn-light" onclick="copyGherkin()">
+                            <button class="btn btn-sm btn-light" onclick="copyCode()">
                                 <i class="fas fa-copy"></i> Copy
                             </button>
-                            <button class="btn btn-sm btn-light" onclick="downloadGherkin()">
+                            <button class="btn btn-sm btn-light" onclick="downloadCode()">
                                 <i class="fas fa-download"></i> Download
                             </button>
                         </div>
@@ -142,11 +128,11 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-2">
-                        <span class="badge bg-primary">Feature: <span id="resultFeature"></span></span>
-                        <span class="badge bg-info ms-2">Scenarios: <span id="resultScenarioCount"></span></span>
+                        <span class="badge bg-primary">Framework: <span id="resultFramework"></span></span>
+                        <span class="badge bg-info ms-2">Language: <span id="resultLanguage"></span></span>
                         <span class="badge bg-secondary ms-2">Model: <span id="resultModel"></span></span>
                     </div>
-                    <pre id="generatedGherkinBlock" style="max-height: 500px; overflow-y: auto;"><code></code></pre>
+                    <pre id="generatedCodeBlock" style="max-height: 500px; overflow-y: auto;"><code></code></pre>
                 </div>
             </div>
 
@@ -184,18 +170,17 @@
     }
 
     .form-select:focus, .form-control:focus {
-        border-color: #28a745;
-        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
 
-    #generatedGherkinBlock {
+    #generatedCodeBlock {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
         border-radius: 6px;
         padding: 1rem;
         font-size: 0.9rem;
         line-height: 1.6;
-        font-family: 'Courier New', monospace;
     }
 
     .btn-lg {
@@ -211,152 +196,211 @@
 </style>
 
 <script>
+  
+
     // Load initial data
     document.addEventListener('DOMContentLoaded', function() {
+        loadAgents();
         loadAgentSettings();
     });
 
-    async function loadAgentSettings() {
+    async function loadAgents() {
         try {
-            const response = await fetch('/api/code-generator/agent-settings');
-            
-            if (!response.ok) {
-                console.error('Error loading agent settings: HTTP', response.status);
-                showError('Failed to load agent settings. Please check configuration.');
-                return;
-            }
-            
+            // Fetch all agents ordered by setting_name ASC
+            const response = await fetch('/api/code-generator/agents?order_by=setting_name');
             const data = await response.json();
-            console.log("Agent settings response:", data);
 
-            if (data.success && data.agent_settings && data.agent_settings.length > 0) {
-                const agentSelect = document.getElementById('agentSelect');
-                const modelSelect = document.getElementById('modelSelect');
-                
-                // Clear existing options
-                agentSelect.innerHTML = '<option value="">-- Select an Agent --</option>';
-                modelSelect.innerHTML = '<option value="">Select a model...</option>';
-                
-                // Populate both agent dropdown and model dropdown from agent_settings
-                data.agent_settings.forEach(setting => {
-                    // Add to agent dropdown
-                    const agentOption = document.createElement('option');
-                    agentOption.value = setting.id;
-                    agentOption.textContent = setting.name;
-                    agentOption.dataset.model = setting.llm_model_name;
-                    agentOption.dataset.provider = setting.llm_provider;
-                    agentOption.dataset.apiKey = setting.llm_api_key || '';
-                    agentSelect.appendChild(agentOption);
-                    
-                    // Add to model dropdown (avoid duplicates)
-                    let modelExists = false;
-                    for (let i = 0; i < modelSelect.options.length; i++) {
-                        if (modelSelect.options[i].value === setting.llm_model_name) {
-                            modelExists = true;
-                            break;
-                        }
-                    }
-                    if (!modelExists && setting.llm_model_name) {
-                        const modelOption = document.createElement('option');
-                        modelOption.value = setting.llm_model_name;
-                        modelOption.textContent = setting.llm_model_name;
-                        modelOption.dataset.provider = setting.llm_provider;
-                        modelSelect.appendChild(modelOption);
-                    }
+            const agentSelect = document.getElementById('agentSelect');
+            const createTestAgentBtn = document.getElementById('createTestAgentBtn');
+            agentSelect.innerHTML = '<option value="">-- Select an agent from database --</option>';
+
+            if (data.success && data.agents && data.agents.length > 0) {
+                // Sort by name in JS as fallback if backend doesn't support order_by param
+                data.agents.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                data.agents.forEach(agent => {
+                    const option = document.createElement('option');
+                    option.value = agent.id;
+                    option.textContent = agent.name;
+                    option.dataset.provider = agent.llm_provider || '';
+                    option.dataset.model = agent.llm_model_name || '';
+                    option.dataset.apiKey = agent.llm_api_key || '';
+                    agentSelect.appendChild(option);
                 });
-                
-                console.log("✅ Loaded " + data.agent_settings.length + " agents from agent_settings");
+                // Auto-select the first agent
+                agentSelect.value = data.agents[0].id;
+                loadAgentDetails();
+                createTestAgentBtn.style.display = 'none';
             } else {
-                console.warn("⚠️ No agent settings received or empty list");
-                console.log("Response data:", data);
-                document.getElementById('agentSelect').innerHTML = '<option value="">No agents available - create agents first</option>';
-                document.getElementById('modelSelect').innerHTML = '<option value="">No models available</option>';
+                agentSelect.innerHTML += '<option disabled>No agents found - create one below</option>';
+                createTestAgentBtn.style.display = 'block';
             }
         } catch (error) {
-            console.error('❌ Error loading agent settings:', error);
-            document.getElementById('agentSelect').innerHTML = '<option value="">Error loading agents</option>';
-            document.getElementById('modelSelect').innerHTML = '<option value="">Error loading models</option>';
+            showError('Failed to load agents: ' + error.message);
         }
     }
 
-    function loadAgentDetails() {
+    async function createTestAgent() {
+        try {
+            console.log("Creating test agent...");
+            
+            const createTestAgentBtn = document.getElementById('createTestAgentBtn');
+            createTestAgentBtn.disabled = true;
+            createTestAgentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            
+            const response = await fetch('/api/code-generator/create-test-agent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            console.log("Test agent creation response:", data);
+            
+            if (data.success) {
+                showError('✅ Test agent created! Reloading agents...');
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showError("Failed to create test agent: " + (data.error || "Unknown error"));
+                createTestAgentBtn.disabled = false;
+                createTestAgentBtn.innerHTML = '<i class="fas fa-plus"></i> Create Test Agent';
+            }
+        } catch (error) {
+            console.error('Error creating test agent:', error);
+            showError('Failed to create test agent: ' + error.message);
+            const createTestAgentBtn = document.getElementById('createTestAgentBtn');
+            createTestAgentBtn.disabled = false;
+            createTestAgentBtn.innerHTML = '<i class="fas fa-plus"></i> Create Test Agent';
+        }
+    }
+
+    async function loadAgentDetails() {
         const agentSelect = document.getElementById('agentSelect');
-        const selectedOption = agentSelect.options[agentSelect.selectedIndex];
+        const agentId = agentSelect.value;
 
-        console.log("Loading agent details from selected option");
+        console.log("Loading agent details for ID:", agentId);
 
-        if (!agentSelect.value) {
+        if (!agentId) {
             // Clear fields if no agent selected
-            document.getElementById('modelSelect').selectedIndex = 0;
+            document.getElementById('modelSelect').innerHTML = '<option value="">Select a model...</option>';
             document.getElementById('apiKeyDisplay').value = '';
             document.getElementById('apiKeySelect').value = '';
             return;
         }
 
-        // Get data from dataset attributes
-        const model = selectedOption.dataset.model;
-        const provider = selectedOption.dataset.provider;
-        const apiKey = selectedOption.dataset.apiKey;
+        try {
+            const response = await fetch(`/api/code-generator/agent/${agentId}`);
+            const data = await response.json();
 
-        console.log("Agent data - Model:", model, "Provider:", provider);
+            console.log("Agent details response:", data);
 
-        // Set model selection
-        const modelSelect = document.getElementById('modelSelect');
-        let modelFound = false;
-        for (let i = 0; i < modelSelect.options.length; i++) {
-            if (modelSelect.options[i].value === model) {
-                modelSelect.selectedIndex = i;
-                modelFound = true;
-                console.log("Selected model:", model);
-                break;
+            if (data.success) {
+                const agent = data.agent;
+                
+                // Set model - clear and add new option
+                const modelSelect = document.getElementById('modelSelect');
+                modelSelect.innerHTML = '<option value="">Select a model...</option>';
+                
+                if (agent.llm_model_name) {
+                    const modelOption = document.createElement('option');
+                    modelOption.value = agent.llm_provider;
+                    modelOption.textContent = agent.llm_model_name;
+                    modelOption.selected = true;
+                    modelSelect.appendChild(modelOption);
+                    console.log("Added model option:", agent.llm_model_name);
+                }
+                
+                // Set API key display - show masked key with provider
+                let apiKeyDisplay = '';
+                if (agent.llm_api_key) {
+                    const keyLength = agent.llm_api_key.length;
+                    const maskedKey = 'sk-' + '*'.repeat(Math.min(keyLength - 6, 20)) + agent.llm_api_key.slice(-4);
+                    apiKeyDisplay = `${agent.llm_provider}: ${maskedKey}`;
+                } else {
+                    apiKeyDisplay = `${agent.llm_provider}: Not set`;
+                }
+                
+                document.getElementById('apiKeyDisplay').value = apiKeyDisplay;
+                document.getElementById('apiKeySelect').value = agent.llm_api_key || '';
+                
+                console.log("Agent details loaded successfully", {
+                    provider: agent.llm_provider,
+                    model: agent.llm_model_name,
+                    hasApiKey: !!agent.llm_api_key
+                });
+            } else {
+                console.error("API error:", data.error);
+                showError('Failed to load agent details: ' + (data.error || "Unknown error"));
             }
+        } catch (error) {
+            console.error('Error loading agent details:', error);
+            showError('Failed to load agent details: ' + error.message);
         }
-
-        // If model not found, add it
-        if (!modelFound && model) {
-            const modelOption = document.createElement('option');
-            modelOption.value = model;
-            modelOption.textContent = model;
-            modelOption.selected = true;
-            modelSelect.appendChild(modelOption);
-            console.log("Added missing model option:", model);
-        }
-
-        // Set API key display - show masked key with provider
-        let apiKeyDisplay = '';
-        if (apiKey) {
-            const keyLength = apiKey.length;
-            const maskedKey = apiKey.substring(0, 3) + '*'.repeat(Math.min(keyLength - 7, 20)) + apiKey.slice(-4);
-            apiKeyDisplay = `${provider}: ${maskedKey}`;
-        } else {
-            apiKeyDisplay = `${provider}: Not set`;
-        }
-
-        document.getElementById('apiKeyDisplay').value = apiKeyDisplay;
-        document.getElementById('apiKeySelect').value = apiKey || '';
-
-        console.log("Agent details loaded from dropdown data");
     }
 
-    async function generateGherkin() {
-        const agentSelect = document.getElementById('agentSelect');
-        const featureName = document.getElementById('featureName');
-        const scenarioDescription = document.getElementById('scenarioDescription');
+    async function loadAgentSettings() {
+        try {
+            const response = await fetch('/api/code-generator/agent-settings');
+            const data = await response.json();
+
+            if (data.success) {
+                // Populate model select (fallback for manual selection)
+                const modelSelect = document.getElementById('modelSelect');
+                if (modelSelect.options.length === 1) { // Only if not already populated
+                    data.agent_settings.forEach(setting => {
+                        const option = document.createElement('option');
+                        option.value = setting.llm_provider;
+                        option.textContent = setting.llm_model_name;
+                        option.dataset.provider = setting.llm_provider;
+                        modelSelect.appendChild(option);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+        }
+    }
+
+    function updateLanguages() {
+        const framework = document.getElementById('frameworkSelect').value.toLowerCase();
+        const languageSelect = document.getElementById('languageSelect');
+
+        if (!framework) {
+            languageSelect.innerHTML = '<option value="">Select a framework first...</option>';
+            return;
+        }
+
+        const languages = languageOptions[framework] || [];
+        languageSelect.innerHTML = '<option value="">Select a language...</option>';
+
+        languages.forEach((lang, index) => {
+            const option = document.createElement('option');
+            option.value = languageValues[framework][index];
+            option.textContent = lang;
+            languageSelect.appendChild(option);
+        });
+    }
+
+    async function createAgentAndGenerate() {
+        const frameworkSelect = document.getElementById('frameworkSelect');
+        const languageSelect = document.getElementById('languageSelect');
+        const promptTextarea = document.getElementById('promptTextarea');
         const modelSelect = document.getElementById('modelSelect');
         const apiKeySelect = document.getElementById('apiKeySelect');
-        const scenarioCount = document.getElementById('scenarioCount');
         
         // Validation
-        if (!agentSelect.value) {
-            showError('Please select an agent');
+        if (!frameworkSelect.value) {
+            showError('Please select a framework');
             return;
         }
-        if (!featureName.value.trim()) {
-            showError('Please enter a feature name');
+        if (!languageSelect.value) {
+            showError('Please select a language');
             return;
         }
-        if (!scenarioDescription.value.trim()) {
-            showError('Please enter a scenario description');
+        if (!promptTextarea.value.trim()) {
+            showError('Please enter a test scenario or description');
             return;
         }
         if (!modelSelect.value) {
@@ -368,112 +412,435 @@
             return;
         }
 
+        const frameworkText = frameworkSelect.options[frameworkSelect.selectedIndex].text;
+        const languageText = languageSelect.options[languageSelect.selectedIndex].text;
         const modelText = modelSelect.options[modelSelect.selectedIndex].text;
-        const agentName = agentSelect.options[agentSelect.selectedIndex].text;
-
-        // Show loading
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const generateBtn = document.getElementById('generateBtn');
-        const errorAlert = document.getElementById('errorAlert');
-        
-        if (loadingSpinner) loadingSpinner.style.display = 'block';
-        if (generateBtn) generateBtn.disabled = true;
-        if (errorAlert) errorAlert.style.display = 'none';
 
         try {
-            console.log("📤 Sending Gherkin generation request with:");
-            console.log("  Agent:", agentName);
-            console.log("  Feature:", featureName.value);
-            console.log("  Model:", modelText);
-            console.log("  Scenario Count:", scenarioCount.value);
+            console.log("🔨 Creating agent with config...");
             
-            const requestBody = {
-                feature_name: featureName.value,
-                scenario_description: scenarioDescription.value,
-                scenario_count: parseInt(scenarioCount.value),
-                model: modelSelect.value,
-                api_key: apiKeySelect.value,
-                agent_id: agentSelect.value,
-                context: {
-                    agent_name: agentName,
-                    model_name: modelText
-                }
-            };
-            
-            console.log("📋 Request body:", JSON.stringify(requestBody, null, 2));
-            console.log("📤 Sending to /api/gherkin-generator/generate");
-            
-            const response = await fetch('/api/gherkin-generator/generate', {
+            const createBtn = document.getElementById('createAndGenerateBtn');
+            createBtn.disabled = true;
+            createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Agent...';
+
+            const createResponse = await fetch('/api/code-generator/create-agent-with-config', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify({
+                    model_name: modelSelect.value,
+                    llm_provider: modelText.toLowerCase().includes('gpt') ? 'openai' : 
+                                 modelText.toLowerCase().includes('gemini') ? 'google' :
+                                 modelText.toLowerCase().includes('claude') ? 'anthropic' :
+                                 modelText.toLowerCase().includes('deepseek') ? 'deepseek' : 'openai',
+                    llm_api_key: apiKeySelect.value,
+                    framework: frameworkText,
+                    language: languageText,
+                    scenario: promptTextarea.value,
+                    temperature: 0.7
+                })
             });
 
-            console.log("📥 Response status:", response.status);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("❌ HTTP Error:", response.status, errorText);
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
-            }
+            const createData = await createResponse.json();
+            console.log("Agent creation response:", createData);
 
-            const data = await response.json();
-            console.log("📥 Response data received");
-            console.log("  Success:", data.success);
-            console.log("  Generated gherkin length:", data.gherkin?.length || 0, "characters");
-
-            if (data.success) {
-                console.log("✅ Gherkin generation successful!");
-                if (data.api_error) {
-                    console.warn("⚠️ API Error (using fallback template):", data.api_error);
-                }
-                displayResults(data);
+            if (createData.success) {
+                console.log(`✅ Agent ${createData.action}:`, createData.agent_id);
+                const actionMsg = createData.action === 'updated' ? 'updated' : 'created';
+                showError(`✅ Agent ${actionMsg} successfully! Now generating code...`);
+                
+                // Auto-select the agent
+                document.getElementById('agentSelect').value = createData.agent_id;
+                
+                // Wait a moment then generate
+                setTimeout(() => {
+                    generateCode();
+                }, 1000);
             } else {
-                console.error("❌ Generation failed:", data.error);
-                throw new Error(data.error || 'Failed to generate Gherkin scenarios');
+                showError("Failed to create/update agent: " + (createData.error || "Unknown error"));
+                createBtn.disabled = false;
+                createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Create Agent & Generate';
             }
         } catch (error) {
-            console.error('❌ Error during generation:', error);
-            const errorMsg = 'Error: ' + error.message;
-            console.log("📢 Showing error:", errorMsg);
-            showError(errorMsg);
-        } finally {
-            const spinner = document.getElementById('loadingSpinner');
-            const btn = document.getElementById('generateBtn');
-            if (spinner) spinner.style.display = 'none';
-            if (btn) btn.disabled = false;
+            console.error('Error creating agent:', error);
+            showError('Failed to create agent: ' + error.message);
+            const createBtn = document.getElementById('createAndGenerateBtn');
+            createBtn.disabled = false;
+            createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Create Agent & Generate';
         }
     }
+async function generateCode() {
+    const promptTextarea = document.getElementById('promptTextarea');
+    const modelSelect = document.getElementById('modelSelect');
+    const apiKeyDisplay = document.getElementById('apiKeyDisplay');
+    const apiKeySelect = document.getElementById('apiKeySelect');
+    
+    // Check if elements exist
+    if ( !promptTextarea || !modelSelect) {
+        showError('Error: Required form elements not found');
+        return;
+    }
 
+    const scenarioContent = promptTextarea.value;
+    const model = modelSelect.value;
+    const modelText = modelSelect.options[modelSelect.selectedIndex].text;
+    const apiKeyDisplayVal = apiKeyDisplay ? apiKeyDisplay.value : '';
+    const apiKey = apiKeySelect ? apiKeySelect.value : '';
+
+    // Validation
+    if (!scenarioContent.trim()) {
+        showError('Please enter a test scenario or description');
+        return;
+    }
+    if (!model) {
+        showError('Please select an LLM model or agent');
+        return;
+    }
+    if (!apiKey) {
+        showError('Please provide an API key');
+        return;
+    }
+
+// Build robust test code generation prompt with POM and step definitions
+const comprehensivePrompt = `
+=== SCENARIO CONVERSION REQUEST ===
+**Task:**
+Convert the following manual test scenario into a **complete Gherkin format** (Given-When-Then). Preserve all details and steps.
+
+**Manual Scenario:**
+${scenarioContent}
+
+**Requirements:**
+1. Use proper Gherkin syntax.
+2. Break down the scenario into clear Given / When / Then steps.
+3. Maintain clarity, readability, and logical order.
+4. Include any preconditions or postconditions if relevant.
+5. Make it suitable for automation in test frameworks like Cucumber.
+
+Please generate the Gherkin scenario now:
+`;
+
+
+
+    // Show loading
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const generateBtn = document.getElementById('generateBtn');
+    const errorAlert = document.getElementById('errorAlert');
+    
+    if (loadingSpinner) loadingSpinner.style.display = 'block';
+    if (generateBtn) {
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Generating...';
+    }
+    if (errorAlert) errorAlert.style.display = 'none';
+
+    try {
+        console.log("📤 Starting code generation...");
+        
+        // Extract provider and model
+        let llmProvider = modelText;
+        let modelName = model;
+        
+        if (model.includes(':')) {
+            const parts = model.split(':');
+            llmProvider = parts[0].toLowerCase();
+            modelName = parts.slice(1).join(':');
+        } else {
+            if (model.includes('claude')) llmProvider = 'anthropic';
+            else if (model.includes('gpt')) llmProvider = 'openai';
+            else if (model.includes('google')) llmProvider = modelText;
+            else if (model.includes('mistral')) llmProvider = 'mistral';
+            else if (model.includes('command')) llmProvider = 'cohere';
+            else if (model.includes('llama')) llmProvider = 'groq';
+        }
+        
+        console.log("🤖 Provider:", llmProvider, "| Model:", modelName);
+        
+        // Call with retry
+        const generatedCode = await callAIWithRetry(
+            llmProvider,
+            modelName,
+            apiKey,
+            comprehensivePrompt
+        );
+
+        console.log("✅ Generation successful!");
+
+        const data = {
+            success: true,
+            generated_code: generatedCode,
+            framework: "Cucumber",
+            language: "Gherkin",
+            model: modelText,
+            scenario: scenarioContent
+        };
+
+        displayResults(data);
+        
+    } catch (error) {
+        console.error('❌ Final error:', error);
+        
+        // Format user-friendly error
+        let userMessage = '';
+        const errMsg = error.message || '';
+        
+        if (errMsg.includes('503') || errMsg.includes('UNAVAILABLE')) {
+            userMessage = `⚠️ The ${model} model is currently overloaded. Please:\n\n1. Try again in 1-2 minutes, or\n2. Select a different model (OpenAI GPT, Anthropic Claude, or Groq are usually more available)`;
+        } else if (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('API key')) {
+            userMessage = '🔑 Invalid API key. Please check your API key settings.';
+        } else if (errMsg.includes('429') || errMsg.includes('rate limit')) {
+            userMessage = '⏱️ Rate limit reached. Please wait a moment and try again.';
+        } else if (errMsg.includes('timeout')) {
+            userMessage = '⏱️ Request timed out. The AI is taking too long to respond. Please try again.';
+        } else if (errMsg.includes('not supported')) {
+            userMessage = `❌ ${errMsg}`;
+        } else {
+            userMessage = `❌ Error: ${errMsg.substring(0, 200)}`;
+        }
+        
+        showError(userMessage);
+        
+    } finally {
+        const spinner = document.getElementById('loadingSpinner');
+        const btn = document.getElementById('generateBtn');
+        if (spinner) spinner.style.display = 'none';
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Generate Code';
+        }
+    }
+}
+
+// ==========================================
+// RETRY LOGIC
+// ==========================================
+async function callAIWithRetry(provider, model, apiKey, prompt, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`🔄 Attempt ${attempt}/${maxRetries}`);
+            
+            const result = await iaGenerative(model,provider, apiKey, prompt);
+            console.log(`✅ Success on attempt ${attempt}!`);
+            return result;
+            
+        } catch (error) {
+            const errMsg = error.message || '';
+            console.warn(`⚠️ Attempt ${attempt} failed:`, errMsg.substring(0, 100));
+            
+            // Check if retryable
+            const is503 = errMsg.includes('503') || errMsg.includes('UNAVAILABLE');
+            const is429 = errMsg.includes('429') || errMsg.includes('rate limit');
+            const is502 = errMsg.includes('502');
+            const isTimeout = errMsg.includes('timeout');
+            
+            const isRetryable = is503 || is429 || is502 || isTimeout;
+            
+            // Don't retry on last attempt or non-retryable errors
+            if (attempt === maxRetries || !isRetryable) {
+                throw error;
+            }
+            
+            // Exponential backoff: 1s, 2s, 4s
+            const delay = Math.pow(2, attempt - 1) * 1000;
+            console.log(`⏳ Waiting ${delay/1000}s before retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+}
+
+// ==========================================
+// CORE AI FUNCTION
+// ==========================================
+async function iaGenerative(llmModel, modelName, apiKey, prompt) {
+    
+    const configs = {
+        
+        "anthropic": {
+            url: "https://api.anthropic.com/v1/messages",
+            headers: {
+                "Content-Type": "application/json",
+                "x-api-key": apiKey,
+                "anthropic-version": "2023-06-01"
+            },
+            body: {
+                model: modelName,
+                max_tokens: 4096,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.content[0].text
+        },
+        
+        "openai": {
+            url: "https://api.openai.com/v1/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.choices[0].message.content
+        },
+        
+        "google": {
+            url: `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: {
+                contents: [{ parts: [{ text: prompt }] }]
+            },
+            extract: (data) => data.candidates[0].content.parts[0].text
+        },
+        
+        "mistral": {
+            url: "https://api.mistral.ai/v1/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.choices[0].message.content
+        },
+        
+        "cohere": {
+            url: "https://api.cohere.ai/v1/chat",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                message: prompt
+            },
+            extract: (data) => data.text
+        },
+        
+        "groq": {
+            url: "https://api.groq.com/openai/v1/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.choices[0].message.content
+        },
+        
+        "perplexity": {
+            url: "https://api.perplexity.ai/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: {
+                model: modelName,
+                messages: [{ role: "user", content: prompt }]
+            },
+            extract: (data) => data.choices[0].message.content
+        }
+    };
+    
+    const config = configs[llmModel.toLowerCase()];
+    
+    if (!config) {
+        throw new Error(`Provider "${llmModel}" not supported. Available: anthropic, openai, google, mistral, cohere, groq, perplexity`);
+    }
+    
+    // Timeout controller
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    
+    try {
+        const response = await fetch(config.url, {
+            method: "POST",
+            headers: config.headers,
+            body: JSON.stringify(config.body),
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API Error (${response.status}): ${errorText}`);
+        }
+        
+        const data = await response.json();
+        return config.extract(data);
+        
+    } catch (error) {
+        clearTimeout(timeoutId);
+        
+        if (error.name === 'AbortError') {
+            throw new Error('Request timeout after 60 seconds');
+        }
+        throw error;
+    }
+}
+
+// ==========================================
+// IMPROVED showError FUNCTION
+// ==========================================
+function showError(message) {
+    console.log('🔴 Showing error:', message);
+    
+    // Try to find error display elements
+    const errorMessage = document.getElementById('errorMessage');
+    const errorAlert = document.getElementById('errorAlert');
+    
+    if (errorMessage) {
+        errorMessage.textContent = message;
+        console.log('✅ Updated errorMessage element');
+    } else {
+        console.warn('⚠️ errorMessage element not found');
+    }
+    
+    if (errorAlert) {
+        errorAlert.style.display = 'block';
+        errorAlert.className = 'alert alert-danger mt-3';
+        errorAlert.innerHTML = `<strong>Error:</strong> ${message}`;
+        console.log('✅ Showed errorAlert');
+    } else {
+        console.warn('⚠️ errorAlert element not found');
+        // Fallback: use browser alert
+        alert(message);
+    }
+}
     function displayResults(data) {
         console.log("📊 Displaying results with data:", data);
         
         try {
-            const featureName = data.feature_name || 'Unknown';
-            const scenarioCount = data.scenario_count || 1;
+            const framework = data.framework || 'Unknown';
+            const language = data.language || 'Unknown';
             const model = data.model_used || 'Unknown';
-            const gherkin = data.gherkin || 'No Gherkin generated';
+            const code = data.generated_code || 'No code generated';
             const apiError = data.api_error;
             
-            console.log("Setting feature:", featureName);
-            console.log("Setting scenario count:", scenarioCount);
+            console.log("Setting framework:", framework);
+            console.log("Setting language:", language);
             console.log("Setting model:", model);
-            console.log("Setting gherkin length:", gherkin.length, "characters");
-            
+            console.log("Setting code length:", code.length, "characters");
+              console.log("Setting code length:", code, "");
             if (apiError) {
                 console.warn("API Error:", apiError);
             }          
-            document.getElementById('resultFeature').textContent = featureName;
-            document.getElementById('resultScenarioCount').textContent = scenarioCount;
+            document.getElementById('resultFramework').textContent = framework;
+            document.getElementById('resultLanguage').textContent = language;
             document.getElementById('resultModel').textContent = model;
             
-            const gherkinBlock = document.getElementById('generatedGherkinBlock');
-            if (gherkinBlock && gherkinBlock.querySelector('code')) {
-                gherkinBlock.querySelector('code').textContent = gherkin;
+            const codeBlock = document.getElementById('generatedCodeBlock');
+            if (codeBlock && codeBlock.querySelector('code')) {
+                codeBlock.querySelector('code').textContent = code;
             } else {
-                gherkinBlock.textContent = gherkin;
+                codeBlock.textContent = code;
             }
             
             const resultsSection = document.getElementById('resultsSection');
@@ -482,7 +849,7 @@
             // Show API error warning if present
             if (apiError) {
                 console.warn("⚠️ Generation used fallback template due to API error");
-                showError(`⚠️ Note: Using template scenarios because LLM API failed: ${apiError}`);
+                showError(`⚠️ Note: Using template code because LLM API failed: ${apiError}`);
             }
             
             console.log("✅ Results section displayed");
@@ -497,26 +864,28 @@
         }
     }
 
-    function copyGherkin() {
+    function copyCode() {
         try {
-            const gherkinBlock = document.getElementById('generatedGherkinBlock');
-            if (!gherkinBlock) {
-                showError('Error: Gherkin block not found');
+            const codeBlock = document.getElementById('generatedCodeBlock');
+            if (!codeBlock) {
+                showError('Error: Code block not found');
                 return;
             }
             
-            let gherkin = gherkinBlock.querySelector('code') ? 
-                          gherkinBlock.querySelector('code').textContent : 
-                          gherkinBlock.textContent;
+            // Get text content from the code element or code block
+            let code = codeBlock.querySelector('code') ? 
+                       codeBlock.querySelector('code').textContent : 
+                       codeBlock.textContent;
             
-            if (!gherkin || gherkin.trim().length === 0) {
-                showError('No Gherkin to copy');
+            if (!code || code.trim().length === 0) {
+                showError('No code to copy');
                 return;
             }
             
             // Copy to clipboard
-            navigator.clipboard.writeText(gherkin).then(() => {
-                const copyBtn = document.querySelector('#resultsSection .btn-light:first-of-type');
+            navigator.clipboard.writeText(code).then(() => {
+                // Find the copy button
+                const copyBtn = document.querySelector('#resultsSection .btn-light');
                 if (copyBtn) {
                     const originalHTML = copyBtn.innerHTML;
                     copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
@@ -531,22 +900,24 @@
                 }
             }).catch(err => {
                 console.error('Clipboard error:', err);
-                showError('Failed to copy Gherkin: ' + err.message);
+                showError('Failed to copy code: ' + err.message);
             });
         } catch (error) {
-            console.error('Error in copyGherkin:', error);
+            console.error('Error in copyCode:', error);
             showError('Error: ' + error.message);
         }
     }
 
-    function downloadGherkin() {
-        const gherkin = document.getElementById('generatedGherkinBlock').textContent;
-        const featureName = document.getElementById('resultFeature').textContent;
+    function downloadCode() {
+        const code = document.getElementById('generatedCodeBlock').textContent;
+        const framework = document.getElementById('resultFramework').textContent;
+        const language = document.getElementById('resultLanguage').textContent;
         
-        const filename = `${featureName.toLowerCase().replace(/\s+/g, '_')}.feature`;
+        const ext =  '.feature';
+        const filename = `test-${framework.toLowerCase()}-${language.toLowerCase()}${ext}`;
 
         const element = document.createElement('a');
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(gherkin));
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(code));
         element.setAttribute('download', filename);
         element.style.display = 'none';
         document.body.appendChild(element);
@@ -563,14 +934,14 @@
         if (errorMessage) {
             errorMessage.textContent = message;
         } else {
-            console.error("⚠️ errorMessage element not found");
+            console.error("⚠️  errorMessage element not found");
             alert('Error: ' + message);
         }
         
         if (errorAlert) {
             errorAlert.style.display = 'block';
         } else {
-            console.error("⚠️ errorAlert element not found");
+            console.error("⚠️  errorAlert element not found");
         }
     }
 
