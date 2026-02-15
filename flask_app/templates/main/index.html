@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Test Case Generator - Ines QA Platform{% endblock %}
+
+{% block extra_css %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <!-- Header Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 mb-2" style="color: #2c3e50;">
+                <i class="fas fa-flask"></i> Test Case Generator
+            </h1>
+            <p class="lead text-muted">Generate comprehensive test cases for Xray using AI</p>
+            <hr class="my-4">
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Form Column -->
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h5 class="mb-0 text-white">
+                        <i class="fas fa-cog"></i> Configuration
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Alert for errors -->
+                    <div id="errorAlert" class="alert alert-danger alert-dismissible fade hide" role="alert">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span id="errorMessage"></span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('main.generate') }}" id="testForm" class="needs-validation" novalidate>
+                        <!-- Requirement Key -->
+                        <div class="mb-3">
+                            <label for="req" class="form-label fw-bold">
+                                <span class="badge bg-info">1</span> Requirement Key
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                <input type="text" class="form-control" id="req" name="req" required 
+                                       placeholder="e.g., W250-6073" value="W250-6073">
+                            </div>
+                            <small class="form-text text-muted">Enter the Jira requirement key</small>
+                        </div>
+
+                        <!-- Jira Credentials Section -->
+                        <hr class="my-4">
+                        <h6 class="mb-3 text-primary"><i class="fas fa-lock"></i> Jira Credentials</h6>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label fw-bold">
+                                    <span class="badge bg-info">2</span> Jira Username
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    <input type="email" class="form-control" id="username" name="username" required 
+                                           placeholder="your@email.com" value="mootezbenabdallah96@gmail.com">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="baseurl" class="form-label fw-bold">
+                                    <span class="badge bg-info">3</span> Jira URL
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-globe"></i></span>
+                                    <input type="url" class="form-control" id="baseurl" name="baseurl" required 
+                                           placeholder="https://your-jira.atlassian.net" 
+                                           value="https://mootezbenabdallah96.atlassian.net">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project Information Section -->
+                        <hr class="my-4">
+                        <h6 class="mb-3 text-primary"><i class="fas fa-project-diagram"></i> Project Information</h6>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="project_key" class="form-label fw-bold">
+                                    <span class="badge bg-info">4</span> Project Key
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-folder"></i></span>
+                                    <input type="text" class="form-control" id="project_key" name="project_key" required 
+                                           placeholder="e.g., CDT" value="DEV">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="version_name" class="form-label fw-bold">
+                                    <span class="badge bg-info">5</span> Version Name
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                    <input type="text" class="form-control" id="version_name" name="version_name" required 
+                                           placeholder="e.g., v1.0.0" value="v1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Generation Settings Section -->
+                        <hr class="my-4">
+                        <h6 class="mb-3 text-primary"><i class="fas fa-sliders-h"></i> Generation Settings</h6>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="folder_path" class="form-label fw-bold">
+                                    <span class="badge bg-info">6</span> Xray Folder Path
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-folder-open"></i></span>
+                                    <input type="text" class="form-control" id="folder_path" name="folder_path" required 
+                                           placeholder="/path/to/folder">
+                                </div>
+                                <small class="form-text text-muted">Local or network folder path</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="tc_amount" class="form-label fw-bold">
+                                    <span class="badge bg-info">7</span> Number of Test Cases
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-list-ol"></i></span>
+                                    <input type="number" class="form-control" id="tc_amount" name="tc_amount" required 
+                                           value="1" min="1" max="100">
+                                </div>
+                                <small class="form-text text-muted">1-100 test cases</small>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="reset" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-redo"></i> Clear
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-rocket"></i> Generate Test Cases
+                            </button>
+                        </div>
+
+                        <!-- Loading Indicator -->
+                        <div class="loading d-none mt-4" id="loading">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted fw-bold"><i class="fas fa-hourglass-half"></i> Generating test cases...</p>
+                                <small class="text-muted">This may take a few minutes</small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Result Section -->
+            {% if result %}
+            <div class="card shadow-lg border-0 border-success border-3">
+                <div class="card-header bg-success">
+                    <h5 class="mb-0 text-white">
+                        <i class="fas fa-check-circle"></i> Generation Result
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success" role="alert">
+                        <h5 class="alert-heading"><i class="fas fa-check"></i> Success!</h5>
+                        <p>{{ result }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar with Tips -->
+        <div class="col-lg-4 d-none d-lg-block">
+            <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Quick Tips</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="text-primary"><i class="fas fa-info-circle"></i> About</h6>
+                        <p class="small text-muted">Generate AI-powered test cases directly from your Jira requirements.</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-primary"><i class="fas fa-clock"></i> Time</h6>
+                        <p class="small text-muted">Generation typically takes 2-5 minutes depending on test case count.</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="text-primary"><i class="fas fa-file-export"></i> Output</h6>
+                        <p class="small text-muted">Results are saved as JSON and can be imported to Xray.</p>
+                    </div>
+                    <div>
+                        <h6 class="text-primary"><i class="fas fa-check-double"></i> Requirements</h6>
+                        <ul class="small text-muted list-unstyled">
+                            <li>✓ Valid Jira account</li>
+                            <li>✓ API token configured</li>
+                            <li>✓ Xray plugin installed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+document.getElementById('testForm').addEventListener('submit', function(e) {
+    if (!this.checkValidity()) {
+        e.preventDefault();
+        e.stopPropagation();
+    } else {
+        document.getElementById('loading').classList.remove('d-none');
+    }
+    this.classList.add('was-validated');
+});
+
+// Reset form validation state on reset
+document.querySelector('button[type="reset"]').addEventListener('click', function() {
+    document.getElementById('testForm').classList.remove('was-validated');
+});
+</script>
+{% endblock %}

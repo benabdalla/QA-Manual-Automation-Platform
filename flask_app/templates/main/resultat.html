@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styleResultat.css') }}">
+    <!-- Stocker le JSON dans un <script type="application/json"> -->
+    <script src="{{ url_for('static', filename='js/scriptResultat.js') }}"></script>
+
+    <title>Tableau des cas de test</title>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📊 Tableau des cas de test</h1>
+        <p>Gestion complète de vos cas de test Xray</p>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <span class="stat-number" id="totalTests">0</span>
+            <span class="stat-label">Cas de test</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="totalSteps">0</span>
+            <span class="stat-label">Étapes totales</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="avgSteps">0</span>
+            <span class="stat-label">Moy. étapes/test</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="search-container">
+            <input type="text" class="search-input" id="searchInput" placeholder="Rechercher dans les cas de test...">
+            <span class="search-icon">🔍</span>
+        </div>
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="addNewTest()">
+                ➕ Nouveau test
+            </button>
+            <button class="custom-button" id="importBtn">
+                <img src="{{ url_for('static', filename='images/img.png') }}" alt="Logo" class="button-logo">
+                <span class="button-text">
+        <strong>XRAY</strong><br><small>Import</small>
+    </span>
+            </button>
+
+            <!--            <button class="btn btn-info" onclick="toggleView()">-->
+            <!--                🔄 Changer vue-->
+            <!--            </button>-->
+            <!--        </div>-->
+        </div>
+
+        <div class="table-container">
+            <table class="test-table" id="testTable">
+                <thead>
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th style="width: 250px;">Résumé</th>
+                    <th style="width: 300px;">Description</th>
+                    <th style="width: 80px;">Projet</th>
+                    <th style="width: 80px;">Version</th>
+                    <th style="width: 200px;">Étapes</th>
+                    <th style="width: 200px;">Dossier Xray</th>
+                    <th style="width: 150px;">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="testTableBody">
+                <!-- Data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="no-data" id="noData" style="display: none;">
+            <div class="icon">📋</div>
+            <h3>Aucun cas de test trouvé</h3>
+            <p>Commencez par ajouter un nouveau cas de test</p>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Modifier le cas de test</h2>
+            <form id="editForm">
+                <div class="form-group">
+                    <label for="editSummary">Résumé:</label>
+                    <input type="text" id="editSummary" required>
+                </div>
+                <div class="form-group">
+                    <label for="editDescription">Description:</label>
+                    <textarea id="editDescription" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editVersion">Version:</label>
+                    <input type="text" id="editVersion">
+                </div>
+                <div class="form-group">
+                    <label for="editFolder">Dossier Xray:</label>
+                    <input type="text" id="editFolder">
+                </div>
+                <div id="stepsContainer">
+                    <h3>Étapes du test</h3>
+                    <div id="stepsList"></div>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="addStep()">
+                        ➕ Ajouter une étape
+                    </button>
+                </div>
+                <div style="margin-top: 30px; text-align: right;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary" onclick="saveTest()">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+</body>
+</html>

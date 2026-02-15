@@ -1,0 +1,256 @@
+[
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "CDT"
+      },
+      "fixVersions": [
+        {
+          "name": "w2524"
+        }
+      ],
+      "summary": "Ajout de champs produit à l'enregistrement des parties intéressées",
+      "description": "Vérifier l'ajout et le fonctionnement des champs liés au produit dans la section d'enregistrement d'une fiche partie intéressée.\nPréconditions: L'utilisateur doit avoir accès au module des parties intéressées. Un ou plusieurs produits doivent être configurés dans le système."
+    },
+    "steps": [
+      {
+        "action": "Accéder à la fiche d'une partie intéressée et ouvrir la section d'enregistrement.",
+        "data": "",
+        "result": "La section d'enregistrement doit contenir les nouveaux champs suivants: Champs produit (bouton sélectionner), Code produit, Numéro OF, N° Lot, Qté produite, Qté Détectée, Unité, Fournisseur."
+      },
+      {
+        "action": "Cliquer sur le bouton 'Sélectionner' pour le champ 'Champs produit'.",
+        "data": "",
+        "result": "Un pop-up doit s'afficher avec une liste de produits et leurs codes."
+      },
+      {
+        "action": "Rechercher un produit spécifique dans le pop-up.",
+        "data": "",
+        "result": "Le pop-up doit filtrer les produits et afficher le produit recherché."
+      },
+      {
+        "action": "Sélectionner un produit dans le pop-up et valider.",
+        "data": "",
+        "result": "Le produit sélectionné doit être associé à la fiche de la partie intéressée. Les champs 'Code produit', 'Numéro OF', 'N° Lot', 'Qté produite', 'Qté Détectée', 'Unité', 'Fournisseur' doivent pouvoir être renseignés pour ce produit."
+      }
+    ],
+    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "CDT"
+      },
+      "fixVersions": [
+        {
+          "name": "w2524"
+        }
+      ],
+      "summary": "Ajout et gestion des responsables de traitement",
+      "description": "Vérifier l'ajout et la gestion des responsables de traitement dans la section d'enregistrement d'une fiche partie intéressée, et la gestion des notifications.\nPréconditions: L'utilisateur doit avoir accès au module des parties intéressées. Des employés doivent être configurés comme responsables de traitement potentiels."
+    },
+    "steps": [
+      {
+        "action": "Accéder à la fiche d'une partie intéressée et ouvrir la section d'enregistrement.",
+        "data": "",
+        "result": "La section d'enregistrement doit contenir une section 'Responsable de traitement' avec un bouton '+'. "
+      },
+      {
+        "action": "Cliquer sur le bouton '+' dans la section 'Responsable de traitement'.",
+        "data": "",
+        "result": "Un pop-up doit s'afficher avec une liste d'employés pouvant être sélectionnés comme responsables de traitement."
+      },
+      {
+        "action": "Sélectionner un ou plusieurs responsables de traitement dans le pop-up et valider.",
+        "data": "",
+        "result": "Les responsables de traitement sélectionnés doivent être ajoutés à la liste des responsables de traitement de la fiche. Chaque responsable de traitement doit recevoir une notification dans son agenda."
+      },
+      {
+        "action": "Un des responsables de traitement traite la demande de la partie intéressée.",
+        "data": "",
+        "result": "La notification de la demande doit disparaître de l'agenda des autres responsables de traitement."
+      }
+    ],
+    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "CDT"
+      },
+      "fixVersions": [
+        {
+          "name": "w2524"
+        }
+      ],
+      "summary": "Rattachement de réclamations fournisseurs dans les détails",
+      "description": "Vérifier la possibilité de rattacher des réclamations fournisseurs à la section 'Détails' d'une fiche de partie intéressée.\nPréconditions: Le module fournisseur doit être vendu et installé. Des réclamations fournisseurs doivent exister dans le système."
+    },
+    "steps": [
+      {
+        "action": "Accéder à la fiche d'une partie intéressée et ouvrir la section 'Détails'.",
+        "data": "",
+        "result": "La section 'Détails' doit contenir une option pour rattacher des réclamations fournisseurs."
+      },
+      {
+        "action": "Cliquer sur l'option pour rattacher des réclamations fournisseurs.",
+        "data": "",
+        "result": "Une liste des réclamations fournisseurs disponibles doit s'afficher."
+      },
+      {
+        "action": "Sélectionner une ou plusieurs réclamations fournisseurs et valider.",
+        "data": "",
+        "result": "Les réclamations fournisseurs sélectionnées doivent être rattachées à la section 'Détails' de la fiche partie intéressée."
+      }
+    ],
+    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "CDT"
+      },
+      "fixVersions": [
+        {
+          "name": "w2524"
+        }
+      ],
+      "summary": "Ajout d'informations de traitement",
+      "description": "Vérifier l'ajout des champs liés au traitement de la demande dans la partie traitement de la fiche partie intéressée.\nPréconditions: L'utilisateur doit avoir accès au module des parties intéressées."
+    },
+    "steps": [
+      {
+        "action": "Accéder à la fiche d'une partie intéressée et ouvrir la section 'Traitement'.",
+        "data": "",
+        "result": "La section 'Traitement' doit contenir les champs suivants: Nom du responsable de traitement, Date de traitement, Rapport de traitement, et un bouton 'Valider'."
+      },
+      {
+        "action": "Remplir les champs Nom du responsable de traitement, Date de traitement et Rapport de traitement.",
+        "data": "",
+        "result": "Les informations saisies doivent être affichées correctement dans les champs correspondants."
+      },
+      {
+        "action": "Cliquer sur le bouton 'Valider'.",
+        "data": "",
+        "result": "Les informations relatives au traitement doivent être sauvegardées. Seul le responsable de traitement doit pouvoir modifier les informations après la validation, en fonction des droits de modification."
+      }
+    ],
+    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "CDT"
+      },
+      "fixVersions": [
+        {
+          "name": "w2524"
+        }
+      ],
+      "summary": "Paramétrage des champs à masquer",
+      "description": "Vérifier la possibilité de masquer les champs spécifiques de la fiche demande des parties intéressées via le paramétrage.\nPréconditions: L'utilisateur doit avoir les droits d'administrateur pour accéder au paramétrage."
+    },
+    "steps": [
+      {
+        "action": "Accéder à la section de paramétrage des champs à masquer pour le module des parties intéressées.",
+        "data": "",
+        "result": "La section de paramétrage doit contenir les options suivantes: Nom du produit produits (par défaut masqué), Courriers des demandes (par défaut visible), Courrier des réponses aux demandes (par défaut visible), Réclamation client (par défaut visible)."
+      },
+      {
+        "action": "Modifier la visibilité des champs (masquer ou afficher) et sauvegarder les modifications.",
+        "data": "",
+        "result": "Les modifications de visibilité doivent être prises en compte dans la fiche demande des parties intéressées. Les champs masqués ne doivent pas être visibles, et les champs affichés doivent être visibles."
+      }
+    ],
+    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "CDT"
+      },
+      "fixVersions": [
+        {
+          "name": "w2524"
+        }
+      ],
+      "summary": "Vérification de l'aperçu de la fiche",
+      "description": "Vérifier la présence et le contenu correct des informations dans l'aperçu de la fiche demande partie intéressée.\nPréconditions: L'utilisateur doit avoir accès au module des parties intéressées."
+    },
+    "steps": [
+      {
+        "action": "Accéder à l'aperçu d'une fiche demande partie intéressée.",
+        "data": "",
+        "result": "L'aperçu doit afficher les sections suivantes avec les informations correspondantes: Partie enregistrement: Code produit, Produit, N°OF, N°LOT, Qté produite, Qté Détectée, Unité. Partie détail: Liste des réclamations fournisseurs avec N° réclamation, Fournisseur, Date réclamation, Type de produit, Type de réclamation. Partie traitement: Nom du responsable de traitement, Rapport de traitement, Date de traitement."
+      }
+    ],
+    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "CDT"
+      },
+      "fixVersions": [
+        {
+          "name": "w2524"
+        }
+      ],
+      "summary": "Filtre produit dans le reporting",
+      "description": "Vérifier l'ajout et le fonctionnement du filtre 'produit' dans le reporting du bilan des demandes des parties intéressées.\nPréconditions: L'utilisateur doit avoir accès au reporting du bilan des demandes des parties intéressées. Des données doivent être présentes dans le module et liées à différents produits."
+    },
+    "steps": [
+      {
+        "action": "Accéder au reporting du bilan des demandes des parties intéressées.",
+        "data": "",
+        "result": "Le rapport doit contenir un filtre 'produit'."
+      },
+      {
+        "action": "Sélectionner un produit dans le filtre 'produit'.",
+        "data": "",
+        "result": "Le rapport doit filtrer les demandes des parties intéressées et afficher uniquement celles relatives au produit sélectionné."
+      }
+    ],
+    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "CDT"
+      },
+      "fixVersions": [
+        {
+          "name": "w2524"
+        }
+      ],
+      "summary": "Ajout de colonnes à l'export utilitaire",
+      "description": "Vérifier l'ajout des nouvelles colonnes dans l'export utilitaire des non-conformités simplifiées.\nPréconditions: L'utilisateur doit avoir accès à l'utilitaire d'export des non-conformités simplifiées."
+    },
+    "steps": [
+      {
+        "action": "Accéder à l'utilitaire d'export des non-conformités simplifiées.",
+        "data": "",
+        "result": "L'utilitaire doit permettre l'export des données."
+      },
+      {
+        "action": "Exporter les données des non-conformités simplifiées.",
+        "data": "",
+        "result": "Le fichier exporté doit contenir les colonnes suivantes: Référence, Demandeur, Objet, Produit, Traitée, Responsable de traitement, Date de traitement, Rapport de traitement, Date Demande, Processus, Activité, Direction, Service."
+      },
+      {
+        "action": "Vérifier le contenu des colonnes Produit, Responsable de traitement, Date de traitement et Rapport de traitement pour une non-conformité simplifiée.",
+        "data": "",
+        "result": "Les colonnes Produit, Responsable de traitement, Date de traitement et Rapport de traitement doivent contenir les informations correctes associées à la non-conformité."
+      }
+    ],
+    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+  }
+]

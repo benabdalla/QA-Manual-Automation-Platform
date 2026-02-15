@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Settings - Ines QA Platform{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">
+        <i class="fas fa-cogs"></i> Agent Settings
+    </h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Your Saved Configurations</h5>
+                </div>
+                <div class="card-body">
+                    {% if configs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Configuration Name</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for config in configs %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ config.config_name }}</strong>
+                                            {% if config.description %}
+                                                <br><small class="text-muted">{{ config.description }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ config.created_at.strftime('%b %d, %Y') }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No saved configurations yet. Create your first one!
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Create New Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="config_name" class="form-label">Configuration Name</label>
+                            <input type="text" class="form-control" id="config_name" placeholder="e.g., My First Agent">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="config_desc" class="form-label">Description</label>
+                            <textarea class="form-control" id="config_desc" rows="3" placeholder="Describe your configuration"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-plus"></i> Create Configuration
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this script include at the top of your script section -->
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+
+<script>
+async function saveAgentSettings() {
+    // Check if user is logged in
+    if (!isLoggedIn()) {
+        showError('❌ Please login to save settings');
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+    }
+
+    const settingName = document.getElementById('settingName').value;
+    if (!settingName.trim()) {
+        showError('Please enter a setting name');
+        return;
+    }
+
+    // Gather all settings data
+    const settingsData = {
+        name: settingName,  // Add the name field
+        setting_name: settingName,
+        description: document.getElementById('settingDescription')?.value || '',
+        agent_type: document.getElementById('agentType')?.value || 'org',
+        llm_provider: document.getElementById('llmProvider')?.value || 'openai',
+        llm_model_name: document.getElementById('llmModel')?.value || 'gpt-4o',
+        llm_temperature: parseFloat(document.getElementById('llmTemperature')?.value) || 1.0,
+        llm_base_url: document.getElementById('llmBaseUrl')?.value || '',
+        llm_api_key: document.getElementById('llmApiKey')?.value || '',
+        use_own_browser: document.getElementById('useOwnBrowser')?.checked || false,
+        keep_browser_open: document.getElementById('keepBrowserOpen')?.checked || false,
+        headless: document.getElementById('headless')?.checked || false,
+        disable_security: document.getElementById('disableSecurity')?.checked || true,
+        window_w: parseInt(document.getElementById('windowWidth')?.value) || 1280,
+        window_h: parseInt(document.getElementById('windowHeight')?.value) || 1100,
+        use_vision: document.getElementById('useVision')?.checked || true,
+        max_steps: parseInt(document.getElementById('maxSteps')?.value) || 100,
+        max_actions_per_step: parseInt(document.getElementById('maxActionsPerStep')?.value) || 10
+    };
+
+    try {
+        // Use authFetch for authenticated request
+        const response = await authFetch('/api/code-generator/save-agent-setting', {
+            method: 'POST',
+            body: JSON.stringify(settingsData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showSuccess('✅ Agent settings saved successfully!');
+            // Reload settings list
+            loadAgentSettings();
+        } else {
+            showError('❌ ' + (data.error || 'Failed to save settings'));
+        }
+    } catch (error) {
+        console.error('Save error:', error);
+        showError('❌ ' + error.message);
+    }
+}
+
+// ...existing code...
+</script>
+{% endblock %}

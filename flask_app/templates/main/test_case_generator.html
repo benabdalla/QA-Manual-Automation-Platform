@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Test Case Generator - Ines QA Platform{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8">
+            <h1 class="mb-4">📋 Test Case Generator</h1>
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Configuration Selection</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Project Key Dropdown -->
+                    <div class="mb-4">
+                        <label for="projectKeySelect" class="form-label">
+                            <i class="fas fa-project-diagram"></i> Select Project Configuration
+                            <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="projectKeySelect" required>
+                            <option value="">-- Choose a project --</option>
+                        </select>
+                        <small class="form-text text-muted">Select a project to auto-fill all configuration fields</small>
+                    </div>
+
+                    <!-- Configuration Details Form -->
+                    <form id="configForm" onsubmit="return false;">
+                        <!-- Jira Credentials Section -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-lock"></i> Jira Credentials</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="jiraReqKey" class="form-label">Requirement Key <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="jiraReqKey" name="jira_requirement_key" readonly>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="jiraUsername" class="form-label">Jira Username <span class="text-danger">*</span></label>
+                                        <input type="email" class="form-control" id="jiraUsername" name="jira_username" readonly>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="jiraUrl" class="form-label">Jira URL <span class="text-danger">*</span></label>
+                                        <input type="url" class="form-control" id="jiraUrl" name="jira_url" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project Information Section -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Project Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="projectKey" class="form-label">Project Key <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="projectKey" name="project_key" readonly>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="versionName" class="form-label">Version <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="versionName" name="version_name" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Xray Configuration Section -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-folder-open"></i> Xray Configuration</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="xrayPath" class="form-label">Xray Folder Path <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="xrayPath" name="xray_folder_path" readonly>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="xrayClientId" class="form-label">Xray Client ID</label>
+                                        <input type="text" class="form-control" id="xrayClientId" name="xray_client_id" readonly>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="xrayClientSecret" class="form-label">Xray Client Secret</label>
+                                        <input type="text" class="form-control" id="xrayClientSecret" name="xray_client_secret" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Generation Settings Section -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-sliders-h"></i> Generation Settings</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="numTestCases" class="form-label">Number of Test Cases <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" id="numTestCases" name="num_test_cases" min="1" max="100" readonly>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="isActive" class="form-label">Status</label>
+                                        <input type="text" class="form-control" id="isActive" name="is_active" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary" id="generateBtn" disabled>
+                                <i class="fas fa-magic"></i> Generate Test Cases
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="clearBtn">
+                                <i class="fas fa-redo"></i> Clear
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📋 How to Use</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0">
+                        <li>Select a project from the dropdown</li>
+                        <li>Configuration fields auto-fill</li>
+                        <li>Adjust test case count if needed</li>
+                        <li>Click "Generate Test Cases"</li>
+                        <li>Download generated test cases</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">ℹ️ Status</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">Selected Project: <strong id="selectedProject">None</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectKeySelect = document.getElementById('projectKeySelect');
+    const configForm = document.getElementById('configForm');
+    const generateBtn = document.getElementById('generateBtn');
+    const selectedProjectSpan = document.getElementById('selectedProject');
+
+    // Load project keys on page load
+    loadProjectKeys();
+
+    // Handle project selection
+    projectKeySelect.addEventListener('change', function() {
+        if (this.value) {
+            loadProjectConfiguration(this.value);
+            generateBtn.disabled = false;
+        } else {
+            clearForm();
+            generateBtn.disabled = true;
+            selectedProjectSpan.textContent = 'None';
+        }
+    });
+
+    // Generate test cases button
+    generateBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const projectKey = document.getElementById('projectKey').value;
+        if (projectKey) {
+            generateTestCases(projectKey);
+        }
+    });
+
+    // Clear button
+    const clearBtn = document.getElementById('clearBtn');
+    clearBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        clearForm();
+        document.getElementById('projectKeySelect').value = '';
+        generateBtn.disabled = true;
+        selectedProjectSpan.textContent = 'None';
+    });
+});
+
+// Load all project keys for dropdown
+async function loadProjectKeys() {
+    try {
+        const response = await fetch('/api/jira-xray-settings');
+        const result = await response.json();
+
+        if (result.success && result.settings && result.settings.length > 0) {
+            const projectKeySelect = document.getElementById('projectKeySelect');
+            
+            result.settings.forEach(setting => {
+                const option = document.createElement('option');
+                option.value = setting.id;
+                option.textContent = setting.project_key;
+                projectKeySelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading project keys:', error);
+        showAlert('Error', 'Failed to load projects', 'danger');
+    }
+}
+
+// Load configuration for selected project
+async function loadProjectConfiguration(settingId) {
+    try {
+        const response = await fetch(`/api/jira-xray-settings/${settingId}`);
+        const result = await response.json();
+
+        if (result.success) {
+            const settings = result.settings;
+            
+            // Populate form fields
+            document.getElementById('jiraReqKey').value = settings.jira_requirement_key || '';
+            document.getElementById('jiraUsername').value = settings.jira_username || '';
+            document.getElementById('jiraUrl').value = settings.jira_url || '';
+            document.getElementById('projectKey').value = settings.project_key || '';
+            document.getElementById('versionName').value = settings.version_name || '';
+            document.getElementById('xrayPath').value = settings.xray_folder_path || '';
+            document.getElementById('xrayClientId').value = settings.xray_client_id || '';
+            document.getElementById('xrayClientSecret').value = settings.xray_client_secret || '';
+            document.getElementById('numTestCases').value = settings.num_test_cases || 1;
+            document.getElementById('isActive').value = settings.is_active ? 'Active' : 'Inactive';
+            
+            // Update status
+            document.getElementById('selectedProject').textContent = settings.project_key;
+        } else {
+            showAlert('Error', result.error || 'Failed to load configuration', 'danger');
+        }
+    } catch (error) {
+        console.error('Error loading configuration:', error);
+        showAlert('Error', 'Failed to load project configuration', 'danger');
+    }
+}
+
+// Clear form fields
+function clearForm() {
+    document.getElementById('configForm').reset();
+    document.querySelectorAll('#configForm input').forEach(input => {
+        input.value = '';
+    });
+}
+
+// Generate test cases
+async function generateTestCases(projectKey) {
+    const numTestCases = document.getElementById('numTestCases').value;
+    const jiraUrl = document.getElementById('jiraUrl').value;
+    const jiraUsername = document.getElementById('jiraUsername').value;
+    const jiraReqKey = document.getElementById('jiraReqKey').value;
+    const versionName = document.getElementById('versionName').value;
+    const xrayPath = document.getElementById('xrayPath').value;
+    
+    try {
+        showAlert('Info', 'Generating test cases... Please wait.', 'info');
+        
+        // Create FormData for form submission
+        const formData = new FormData();
+        formData.append('req', jiraReqKey);
+        formData.append('username', jiraUsername);
+        formData.append('baseurl', jiraUrl + '/rest/api/3');
+        formData.append('project_key', projectKey);
+        formData.append('version_name', versionName);
+        formData.append('folder_path', xrayPath);
+        formData.append('tc_amount', parseInt(numTestCases));
+        
+        // POST to /generate route
+        const response = await fetch('/generate', {
+            method: 'POST',
+            body: formData
+        });
+
+        // If successful, the /generate route will redirect to /resultat
+        // So we just need to redirect if the response is ok
+        if (response.ok) {
+            // Wait a moment then redirect to resultat
+            setTimeout(() => {
+                window.location.href = '/resultat';
+            }, 1000);
+        } else {
+            showAlert('Error', 'Failed to generate test cases', 'danger');
+        }
+    } catch (error) {
+        console.error('Error generating test cases:', error);
+        showAlert('Error', 'An unexpected error occurred', 'danger');
+    }
+}
+
+// Show alert messages
+function showAlert(title, message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="margin-top: 15px;">
+            <strong>${title}:</strong> ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    const alertContainer = document.createElement('div');
+    alertContainer.innerHTML = alertHtml;
+    document.querySelector('.card-body').prepend(alertContainer.firstElementChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+.form-label {
+    font-weight: 500;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.form-control[readonly], .form-select[readonly] {
+    background-color: #f1f5f9;
+    cursor: not-allowed;
+    border-color: #cbd5e1;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.btn:disabled {
+    opacity: 0.65;
+}
+</style>
+{% endblock %}

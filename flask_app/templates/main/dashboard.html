@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+
+{% block title %}IA Agent Dashboard - Ines QA Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-gradient-primary text-white">
+                <div class="card-body">
+                    <h2 class="mb-2">
+                        <i class="fas fa-robot"></i> IA Agent Dashboard
+                    </h2>
+                    <p class="mb-0">Automate your testing workflows with intelligent AI agents</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-play-circle fa-2x text-success mb-2"></i>
+                    <h4 class="mb-0">0</h4>
+                    <small class="text-muted">Active Agents</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-check-circle fa-2x text-primary mb-2"></i>
+                    <h4 class="mb-0">0</h4>
+                    <small class="text-muted">Completed Tasks</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                    <h4 class="mb-0">0</h4>
+                    <small class="text-muted">Pending</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-exclamation-circle fa-2x text-danger mb-2"></i>
+                    <h4 class="mb-0">0</h4>
+                    <small class="text-muted">Failed</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#run-agent">
+                <i class="fas fa-rocket"></i> Run Agent
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#agent-history">
+                <i class="fas fa-history"></i> Agent History
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#agent-settings">
+                <i class="fas fa-cogs"></i> Agent Settings
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#browser-settings">
+                <i class="fas fa-globe"></i> Browser Settings
+            </a>
+        </li>
+    </ul>
+    
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Run Agent Tab -->
+        <div id="run-agent" class="tab-pane fade show active">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-play"></i> Execute Agent Task
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="agentForm">
+                                <!-- Agent Type Selection -->
+                                <div class="mb-3">
+                                    <label class="form-label">Agent Type</label>
+                                    <select class="form-select" id="agentType" name="agentType">
+                                        <option value="browser_use">Browser Use Agent</option>
+                                        <option value="deep_research">Deep Research Agent</option>
+                                        <option value="custom">Custom Agent</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Task Description -->
+                                <div class="mb-3">
+                                    <label class="form-label">Task Description</label>
+                                    <textarea class="form-control" id="taskDescription" rows="4" 
+                                        placeholder="Describe the task you want the agent to perform..." required></textarea>
+                                    <small class="text-muted">Use natural language to describe your automation task</small>
+                                </div>
+                                
+                                <!-- Target URL -->
+                                <div class="mb-3">
+                                    <label class="form-label">Target URL (Optional)</label>
+                                    <input type="url" class="form-control" id="targetUrl" 
+                                        placeholder="https://example.com">
+                                </div>
+                                
+                                <!-- Advanced Options -->
+                                <div class="mb-3">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#advancedOptions">
+                                        <i class="fas fa-cog"></i> Advanced Options
+                                    </button>
+                                </div>
+                                
+                                <div class="collapse" id="advancedOptions">
+                                    <div class="card card-body mb-3">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Max Steps</label>
+                                                <input type="number" class="form-control" value="100" min="1" max="500">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Timeout (seconds)</label>
+                                                <input type="number" class="form-control" value="300" min="30" max="3600">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="headlessMode" checked>
+                                                    <label class="form-check-label" for="headlessMode">
+                                                        Headless Mode
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="screenshotMode">
+                                                    <label class="form-check-label" for="screenshotMode">
+                                                        Take Screenshots
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Submit Button -->
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-rocket"></i> Launch Agent
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Agent Status Panel -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle"></i> Agent Status
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="agentStatus" class="text-center py-4">
+                                <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No agent running</p>
+                            </div>
+                            
+                            <!-- Real-time Log -->
+                            <div id="agentLog" class="mt-3" style="display: none;">
+                                <h6>Live Log:</h6>
+                                <div class="border rounded p-2" style="height: 300px; overflow-y: auto; background: #f8f9fa; font-family: monospace; font-size: 12px;">
+                                    <div id="logContent"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Agent History Tab -->
+        <div id="agent-history" class="tab-pane fade">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> Execution History
+                    </h5>
+                    <button class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash"></i> Clear History
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Agent Type</th>
+                                    <th>Task</th>
+                                    <th>Status</th>
+                                    <th>Started</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                                        <p>No execution history yet. Run your first agent to get started!</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Agent Settings Tab -->
+        <div id="agent-settings" class="tab-pane fade">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs"></i> Agent Configuration
+                    </h5>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newConfigModal">
+                        <i class="fas fa-plus"></i> New Configuration
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Save and manage your agent configurations for quick reuse.</p>
+                    
+                    <div class="row">
+                        <!-- Sample Config Card -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Default Browser Agent</h6>
+                                    <p class="text-muted small mb-2">Standard browser automation settings</p>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-play"></i> Use
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-dashed">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-plus-circle fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted small">Create new configuration</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Browser Settings Tab -->
+        <div id="browser-settings" class="tab-pane fade">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-globe"></i> Browser Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Browser Type</label>
+                                <select class="form-select">
+                                    <option>Chromium (Recommended)</option>
+                                    <option>Firefox</option>
+                                    <option>WebKit</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Window Size</label>
+                                <select class="form-select">
+                                    <option>1920x1080 (Full HD)</option>
+                                    <option>1366x768 (Laptop)</option>
+                                    <option>1280x720 (HD)</option>
+                                    <option>Custom</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">User Agent</label>
+                                <input type="text" class="form-control" 
+                                    placeholder="Default browser user agent">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Download Path</label>
+                                <input type="text" class="form-control" 
+                                    placeholder="./downloads">
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h6 class="mb-3">Browser Options</h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="disableImages">
+                                    <label class="form-check-label" for="disableImages">
+                                        Disable Images
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="disableJavaScript">
+                                    <label class="form-check-label" for="disableJavaScript">
+                                        Disable JavaScript
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="clearCookies" checked>
+                                    <label class="form-check-label" for="clearCookies">
+                                        Clear Cookies
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="disableCache">
+                                    <label class="form-check-label" for="disableCache">
+                                        Disable Cache
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="ignoreHTTPSErrors">
+                                    <label class="form-check-label" for="ignoreHTTPSErrors">
+                                        Ignore HTTPS Errors
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="devtools">
+                                    <label class="form-check-label" for="devtools">
+                                        Open DevTools
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="fas fa-undo"></i> Reset to Default
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.border-dashed {
+    border: 2px dashed #dee2e6 !important;
+}
+
+.border-dashed:hover {
+    border-color: #667eea !important;
+    cursor: pointer;
+}
+</style>
+
+<script>
+// Agent Form Submission - REAL API INTEGRATION
+document.getElementById('agentForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        agent_type: document.getElementById('agentType').value,
+        task: document.getElementById('taskDescription').value,
+        provider: 'openai',  // TODO: Get from user settings
+        model: 'gpt-4',      // TODO: Get from user settings
+        headless: document.getElementById('headlessMode').checked,
+    };
+    
+    // Show status panel
+    const statusDiv = document.getElementById('agentStatus');
+    const logDiv = document.getElementById('agentLog');
+    const logContent = document.getElementById('logContent');
+    
+    // Add loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Running...';
+    
+    try {
+        // Call Flask API
+        const response = await fetch('/api/run-agent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update status
+            statusDiv.innerHTML = `
+                <div class="alert alert-success" role="alert">
+                    <i class="fas fa-check-circle"></i> Agent Completed Successfully
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">Agent ID: ${result.agent_id}</small>
+                    <p class="mt-2">Duration: ${result.data.duration?.toFixed(2) || 'N/A'} seconds</p>
+                </div>
+            `;
+            
+            // Show results
+            logContent.innerHTML = `
+                <div style="color: #28a745;">[SUCCESS] Agent execution completed</div>
+                <div>Task: ${formData.task}</div>
+                <div>Agent Type: ${formData.agent_type}</div>
+                <div style="margin-top: 10px; color: #666; font-size: 11px; word-break: break-all;">
+                    Result: ${JSON.stringify(result.data.result).substring(0, 500)}...
+                </div>
+            `;
+            
+            // Show notification
+            showNotification('Agent executed successfully!', 'success');
+        } else {
+            // Error handling
+            statusDiv.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-circle"></i> Error
+                </div>
+                <p class="text-danger">${result.error}</p>
+            `;
+            
+            logContent.innerHTML = `
+                <div style="color: #dc3545;">[ERROR] ${result.error}</div>
+            `;
+            
+            showNotification(result.error, 'error');
+        }
+        
+        logDiv.style.display = 'block';
+        
+    } catch (error) {
+        statusDiv.innerHTML = `
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-circle"></i> Connection Error
+            </div>
+            <p class="text-danger">${error.message}</p>
+        `;
+        
+        logContent.innerHTML = `
+            <div style="color: #dc3545;">[ERROR] ${error.message}</div>
+        `;
+        
+        logDiv.style.display = 'block';
+        showNotification('Failed to execute agent', 'error');
+        
+    } finally {
+        // Reset button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+});
+
+// Utility function for notifications
+function showNotification(message, type = 'info') {
+    const alertClass = {
+        'success': 'alert-success',
+        'error': 'alert-danger',
+        'info': 'alert-info'
+    }[type] || 'alert-info';
+    
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+
+// Load agent history on tab switch
+document.querySelector('[href="#agent-history"]')?.addEventListener('click', async function() {
+    try {
+        const response = await fetch('/api/agent-history?limit=10');
+        const result = await response.json();
+        
+        if (result.success) {
+            const tbody = document.querySelector('#agent-history table tbody');
+            
+            if (result.data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No execution history yet. Run your first agent to get started!</p>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = result.data.map(execution => `
+                    <tr>
+                        <td><code>${execution.agent_id?.substring(0, 8)}</code></td>
+                        <td>${execution.agent_type}</td>
+                        <td>${execution.task.substring(0, 50)}...</td>
+                        <td>
+                            <span class="badge bg-${execution.status === 'completed' ? 'success' : 'warning'}">
+                                ${execution.status}
+                            </span>
+                        </td>
+                        <td><small>${new Date(execution.started_at).toLocaleString()}</small></td>
+                        <td>${execution.duration?.toFixed(2)}s</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewDetails('${execution.agent_id}')">
+                                View
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load history:', error);
+    }
+});
+
+function viewDetails(agentId) {
+    alert(`Agent ID: ${agentId}\nDetails view coming soon...`);
+}
+</script>
+{% endblock %}

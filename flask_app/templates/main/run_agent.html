@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Run Agent - Ines QA Platform{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">
+        <i class="fas fa-robot"></i> Run Agent
+    </h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Execute Agent</h5>
+                </div>
+                <div class="card-body">
+                    <form id="run-agent-form">
+                        <div class="mb-3">
+                            <label for="agent_config" class="form-label">Select Configuration</label>
+                            <select class="form-select form-select-lg" id="agent_config" required>
+                                <option value="">Choose a configuration...</option>
+                                <option>Configuration 1</option>
+                                <option>Configuration 2</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="agent_input" class="form-label">Agent Instructions</label>
+                            <textarea class="form-control" id="agent_input" rows="4" 
+                                     placeholder="Enter instructions for the agent..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-play"></i> Run Agent
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Executions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No recent executions
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Execution Output -->
+    <div class="card mt-4" id="output-card" style="display: none;">
+        <div class="card-header">
+            <h5 class="mb-0">Execution Output</h5>
+        </div>
+        <div class="card-body">
+            <div id="agent-output" class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;">
+                <pre id="output-text"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('run-agent-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const configId = document.getElementById('agent_config').value;
+    
+    if (!configId) {
+        showNotification('Please select a configuration', 'error');
+        return;
+    }
+    
+    try {
+        const response = await agents.runAgent(configId);
+        document.getElementById('output-card').style.display = 'block';
+        document.getElementById('output-text').textContent = JSON.stringify(response, null, 2);
+        showNotification('Agent started successfully', 'success');
+    } catch (error) {
+        showNotification('Error running agent', 'error');
+    }
+});
+</script>
+{% endblock %}

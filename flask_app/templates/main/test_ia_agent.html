@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Test IA Agent - Ines QA Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="fas fa-robot"></i> Test IA Agent
+            </h1>
+            <p class="text-muted mt-2">Deploy intelligent AI agents to automate your testing workflows</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+    </div>
+    
+    <!-- WebUI Iframe -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <iframe 
+                id="webui-frame" 
+                src="http://127.0.0.1:7788" 
+                style="width: 100%; height: 85vh; border: none; border-radius: 0.25rem;"
+                title="Ines QA WebUI">
+            </iframe>
+        </div>
+    </div>
+    
+    <!-- Fallback Message -->
+    <div id="webui-error" class="alert alert-warning mt-3" style="display: none;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>WebUI Not Available:</strong> 
+        The AI Agent interface is not running. Please ensure the webUI server is started with: 
+        <code>python webui.py</code>
+    </div>
+</div>
+
+<script>
+    // Check if webUI is accessible
+    document.getElementById('webui-frame').addEventListener('load', function() {
+        console.log('WebUI loaded successfully');
+    });
+    
+    document.getElementById('webui-frame').addEventListener('error', function() {
+        console.error('Failed to load WebUI');
+        document.getElementById('webui-error').style.display = 'block';
+        document.getElementById('webui-frame').style.display = 'none';
+    });
+    
+    // Timeout check (5 seconds)
+    setTimeout(function() {
+        const frame = document.getElementById('webui-frame');
+        if (!frame.src) {
+            document.getElementById('webui-error').style.display = 'block';
+            frame.style.display = 'none';
+        }
+    }, 5000);
+</script>
+{% endblock %}

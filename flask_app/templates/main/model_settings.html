@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+
+{% block title %}Model & API Settings - Web UI{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-lg-3 mb-4">
+            <div class="list-group sticky-top" style="top: 20px;">
+                <a href="#model-selection" class="list-group-item list-group-item-action active" data-bs-toggle="list">
+                    <i class="fas fa-robot"></i> Model Selection
+                </a>
+                <a href="#api-configuration" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-key"></i> API Configuration
+                </a>
+                <a href="#model-providers" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-cube"></i> Available Models
+                </a>
+                <a href="#settings-history" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <i class="fas fa-history"></i> Settings History
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Model Selection Tab -->
+            <div class="tab-pane fade show active" id="model-selection">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <h4 class="text-white mb-0">
+                            <i class="fas fa-robot"></i> Model Selection
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="modelForm" class="needs-validation">
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label for="provider" class="form-label"><strong>LLM Provider</strong></label>
+                                    <select id="provider" name="provider" class="form-select form-select-lg" required>
+                                        <option value="">-- Select a Provider --</option>
+                                        <option value="openai">OpenAI</option>
+                                        <option value="anthropic">Anthropic (Claude)</option>
+                                        <option value="mistral">Mistral AI</option>
+                                        <option value="google">Google Generative AI</option>
+                                        <option value="ollama">Ollama (Local)</option>
+                                        <option value="azure">Azure OpenAI</option>
+                                        <option value="ibm">IBM Watson</option>
+                                        <option value="bedrock">AWS Bedrock</option>
+                                    </select>
+                                    <small class="form-text text-muted">Choose your preferred LLM provider</small>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <label for="model" class="form-label"><strong>Model Name</strong></label>
+                                    <select id="model" name="model" class="form-select form-select-lg" required>
+                                        <option value="">-- Select a Model --</option>
+                                    </select>
+                                    <small class="form-text text-muted">Choose the specific model to use</small>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label for="temperature" class="form-label">
+                                        <strong>Temperature</strong>
+                                        <span class="temperature-value ms-2">0.7</span>
+                                    </label>
+                                    <input type="range" id="temperature" name="temperature" 
+                                           class="form-range" min="0" max="2" step="0.1" value="0.7">
+                                    <small class="form-text text-muted">Lower = more deterministic, Higher = more creative</small>
+                                </div>
+
+                                <div class="col-md-6 mb-4">
+                                    <label for="max_tokens" class="form-label"><strong>Max Tokens</strong></label>
+                                    <input type="number" id="max_tokens" name="max_tokens" 
+                                           class="form-control" value="2000" min="100" max="32000">
+                                    <small class="form-text text-muted">Maximum tokens for response</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="system_prompt" class="form-label"><strong>System Prompt</strong></label>
+                                <textarea id="system_prompt" name="system_prompt" 
+                                          class="form-control" rows="4" placeholder="Enter system prompt for the model..."></textarea>
+                                <small class="form-text text-muted">Instructions for how the model should behave</small>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_streaming" 
+                                           name="use_streaming" value="true">
+                                    <label class="form-check-label" for="use_streaming">
+                                        <strong>Enable Streaming Response</strong>
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted">Stream responses in real-time</small>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                <button type="submit" class="btn btn-lg btn-primary">
+                                    <i class="fas fa-save"></i> Save Model Settings
+                                </button>
+                                <button type="reset" class="btn btn-lg btn-secondary">
+                                    <i class="fas fa-undo"></i> Reset
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Current Model Display -->
+                        <div class="alert alert-info mt-4" id="currentModelDisplay" style="display:none;">
+                            <h5><i class="fas fa-check-circle"></i> Current Configuration</h5>
+                            <p class="mb-0"><strong>Provider:</strong> <span id="displayProvider"></span></p>
+                            <p class="mb-0"><strong>Model:</strong> <span id="displayModel"></span></p>
+                            <p class="mb-0"><strong>Temperature:</strong> <span id="displayTemp"></span></p>
+                            <p class="mb-0"><strong>Last Updated:</strong> <span id="displayUpdated"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Configuration Tab -->
+            <div class="tab-pane fade" id="api-configuration">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <h4 class="text-white mb-0">
+                            <i class="fas fa-key"></i> API Key Configuration
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Add New API Key -->
+                        <h5 class="mb-3">Add API Key</h5>
+                        <form id="apiKeyForm" class="needs-validation mb-5">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="keyProvider" class="form-label"><strong>Provider</strong></label>
+                                    <select id="keyProvider" name="keyProvider" class="form-select" required>
+                                        <option value="">-- Select Provider --</option>
+                                        <option value="openai">OpenAI</option>
+                                        <option value="anthropic">Anthropic</option>
+                                        <option value="mistral">Mistral AI</option>
+                                        <option value="google">Google Generative AI</option>
+                                        <option value="ollama">Ollama</option>
+                                        <option value="azure">Azure OpenAI</option>
+                                        <option value="ibm">IBM Watson</option>
+                                        <option value="bedrock">AWS Bedrock</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="keyName" class="form-label"><strong>Key Name</strong></label>
+                                    <input type="text" id="keyName" name="keyName" class="form-control" 
+                                           placeholder="e.g., My OpenAI Key" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="apiKeyValue" class="form-label"><strong>API Key Value</strong></label>
+                                <div class="input-group">
+                                    <input type="password" id="apiKeyValue" name="apiKeyValue" 
+                                           class="form-control" placeholder="Paste your API key here" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="toggleKeyVisibility">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">Your API key is stored securely and never exposed</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="keyDescription" class="form-label">Description (Optional)</label>
+                                <textarea id="keyDescription" name="keyDescription" class="form-control" 
+                                          rows="2" placeholder="Add notes about this key..."></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add API Key
+                            </button>
+                        </form>
+
+                        <hr class="my-5">
+
+                        <!-- Existing API Keys -->
+                        <h5 class="mb-3">Your API Keys</h5>
+                        <div id="apiKeysContainer" class="row">
+                            <!-- API Keys will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Providers Tab -->
+            <div class="tab-pane fade" id="model-providers">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <h4 class="text-white mb-0">
+                            <i class="fas fa-cube"></i> Available Models by Provider
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="providersAccordion">
+                            <!-- OpenAI -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#openaiModels">
+                                        <i class="fas fa-brain"></i> OpenAI
+                                    </button>
+                                </h2>
+                                <div id="openaiModels" class="accordion-collapse collapse show" data-bs-parent="#providersAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            <div class="col-md-6"><strong>gpt-4o</strong> - Latest GPT-4 model</div>
+                                            <div class="col-md-6"><strong>gpt-4-turbo</strong> - Fast & capable</div>
+                                            <div class="col-md-6"><strong>gpt-3.5-turbo</strong> - Cost-effective</div>
+                                            <div class="col-md-6"><strong>gpt-4</strong> - Original GPT-4</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anthropic -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#anthropicModels">
+                                        <i class="fas fa-leaf"></i> Anthropic
+                                    </button>
+                                </h2>
+                                <div id="anthropicModels" class="accordion-collapse collapse" data-bs-parent="#providersAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            <div class="col-md-6"><strong>claude-3-5-sonnet</strong> - Latest Claude model</div>
+                                            <div class="col-md-6"><strong>claude-3-opus</strong> - Most capable</div>
+                                            <div class="col-md-6"><strong>claude-3-sonnet</strong> - Balanced</div>
+                                            <div class="col-md-6"><strong>claude-3-haiku</strong> - Fast & compact</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mistral -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mistralModels">
+                                        <i class="fas fa-wind"></i> Mistral AI
+                                    </button>
+                                </h2>
+                                <div id="mistralModels" class="accordion-collapse collapse" data-bs-parent="#providersAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            <div class="col-md-6"><strong>mistral-large</strong> - Most capable</div>
+                                            <div class="col-md-6"><strong>mistral-medium</strong> - Balanced</div>
+                                            <div class="col-md-6"><strong>mistral-small</strong> - Fast & efficient</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Google -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#googleModels">
+                                        <i class="fas fa-search"></i> Google Generative AI
+                                    </button>
+                                </h2>
+                                <div id="googleModels" class="accordion-collapse collapse" data-bs-parent="#providersAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            <div class="col-md-6"><strong>gemini-pro</strong> - Full-featured</div>
+                                            <div class="col-md-6"><strong>gemini-1.5-flash</strong> - Fast variant</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ollama -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ollamaModels">
+                                        <i class="fas fa-server"></i> Ollama (Local)
+                                    </button>
+                                </h2>
+                                <div id="ollamaModels" class="accordion-collapse collapse" data-bs-parent="#providersAccordion">
+                                    <div class="accordion-body">
+                                        <div class="row">
+                                            <div class="col-md-6"><strong>llama2</strong> - Meta's Llama</div>
+                                            <div class="col-md-6"><strong>mistral</strong> - Mistral 7B</div>
+                                            <div class="col-md-6"><strong>neural-chat</strong> - Optimized for chat</div>
+                                            <div class="col-md-6"><strong>dolphin-mixtral</strong> - High quality</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings History Tab -->
+            <div class="tab-pane fade" id="settings-history">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <h4 class="text-white mb-0">
+                            <i class="fas fa-history"></i> Settings History
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-hover" id="historyTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Setting Type</th>
+                                    <th>Changes</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                                <!-- History entries will be loaded here -->
+                            </tbody>
+                        </table>
+                        <div id="noHistory" class="alert alert-info text-center" style="display:none;">
+                            <i class="fas fa-info-circle"></i> No settings history yet
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11;">
+    <div id="toast" class="toast" role="alert">
+        <div class="toast-header">
+            <strong class="me-auto" id="toastTitle">Success</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            Your settings have been saved
+        </div>
+    </div>
+</div>
+
+<!-- Edit API Key Modal -->
+<div class="modal fade" id="editKeyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit API Key</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editKeyForm">
+                    <div class="mb-3">
+                        <label for="editKeyName" class="form-label">Key Name</label>
+                        <input type="text" id="editKeyName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editKeyValue" class="form-label">API Key</label>
+                        <input type="password" id="editKeyValue" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editKeyDescription" class="form-label">Description</label>
+                        <textarea id="editKeyDescription" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="editKeyActive">
+                        <label class="form-check-label" for="editKeyActive">
+                            Active
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveKeyBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .temperature-value {
+        font-weight: bold;
+        color: #667eea;
+    }
+    
+    .api-key-card {
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+    
+    .api-key-card:hover {
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        transform: translateY(-2px);
+    }
+    
+    .key-display {
+        font-family: 'Courier New', monospace;
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 4px;
+        word-break: break-all;
+    }
+    
+    .accordion-button:not(.collapsed) {
+        background-color: #f8f9fa;
+        color: #667eea;
+    }
+    
+    .form-select:focus,
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+</style>
+
+<script>
+// Model data mapping
+const modelsByProvider = {
+    openai: ['gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
+    anthropic: ['claude-3-5-sonnet', 'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'],
+    mistral: ['mistral-large', 'mistral-medium', 'mistral-small'],
+    google: ['gemini-pro', 'gemini-1.5-flash'],
+    ollama: ['llama2', 'mistral', 'neural-chat', 'dolphin-mixtral'],
+    azure: ['gpt-4o', 'gpt-4-turbo', 'gpt-35-turbo'],
+    ibm: ['ibm-watsonx-ai'],
+    bedrock: ['claude-3-sonnet', 'llama2', 'mistral-large']
+};
+
+// Update models when provider changes
+document.getElementById('provider').addEventListener('change', function() {
+    const provider = this.value;
+    const modelSelect = document.getElementById('model');
+    modelSelect.innerHTML = '<option value="">-- Select a Model --</option>';
+    
+    if (provider && modelsByProvider[provider]) {
+        modelsByProvider[provider].forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            modelSelect.appendChild(option);
+        });
+    }
+});
+
+// Temperature value display
+document.getElementById('temperature').addEventListener('input', function() {
+    document.querySelector('.temperature-value').textContent = this.value;
+});
+
+// Toggle API key visibility
+document.getElementById('toggleKeyVisibility').addEventListener('click', function() {
+    const input = document.getElementById('apiKeyValue');
+    const icon = this.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+});
+
+// Handle model form submission
+document.getElementById('modelForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        provider: document.getElementById('provider').value,
+        model: document.getElementById('model').value,
+        temperature: parseFloat(document.getElementById('temperature').value),
+        max_tokens: parseInt(document.getElementById('max_tokens').value),
+        system_prompt: document.getElementById('system_prompt').value,
+        use_streaming: document.getElementById('use_streaming').checked
+    };
+    
+    try {
+        const response = await fetch('/api/settings/model', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Model settings saved successfully!', 'success');
+            displayCurrentModel(formData);
+            loadSettingsHistory();
+        } else {
+            showToast('Error saving settings: ' + data.error, 'error');
+        }
+    } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+    }
+});
+
+// Handle API key form submission
+document.getElementById('apiKeyForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        key_name: document.getElementById('keyName').value,
+        key_type: document.getElementById('keyProvider').value,
+        key_value: document.getElementById('apiKeyValue').value,
+        description: document.getElementById('keyDescription').value
+    };
+    
+    try {
+        const response = await fetch('/api/api-keys', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('API key added successfully!', 'success');
+            document.getElementById('apiKeyForm').reset();
+            loadApiKeys();
+            loadSettingsHistory();
+        } else {
+            showToast('Error: ' + data.error, 'error');
+        }
+    } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+    }
+});
+
+// Load API keys
+async function loadApiKeys() {
+    try {
+        const response = await fetch('/api/api-keys');
+        const data = await response.json();
+        
+        if (data.success && data.keys) {
+            const container = document.getElementById('apiKeysContainer');
+            container.innerHTML = '';
+            
+            data.keys.forEach(key => {
+                const maskedValue = key.key_value.substring(0, 8) + '...' + key.key_value.substring(key.key_value.length - 4);
+                const card = document.createElement('div');
+                card.className = 'col-md-6 mb-3';
+                card.innerHTML = `
+                    <div class="card api-key-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="card-title mb-1">${key.key_name}</h6>
+                                    <small class="text-muted">${key.key_type}</small>
+                                </div>
+                                <span class="badge ${key.is_active ? 'bg-success' : 'bg-secondary'}">
+                                    ${key.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            <div class="key-display mb-3">${maskedValue}</div>
+                            <small class="text-muted d-block mb-3">
+                                Created: ${new Date(key.created_at).toLocaleDateString()}
+                            </small>
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <button type="button" class="btn btn-outline-primary" 
+                                        onclick="editKey(${key.id}, '${key.key_name}', '${key.key_value}', '${key.key_type}', ${key.is_active})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        onclick="deleteKey(${key.id})">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading API keys:', error);
+    }
+}
+
+// Edit key
+function editKey(id, name, value, type, active) {
+    document.getElementById('editKeyName').value = name;
+    document.getElementById('editKeyValue').value = value;
+    document.getElementById('editKeyActive').checked = active;
+    document.getElementById('saveKeyBtn').onclick = () => saveKey(id);
+    new bootstrap.Modal(document.getElementById('editKeyModal')).show();
+}
+
+// Save key changes
+async function saveKey(id) {
+    const formData = {
+        name: document.getElementById('editKeyName').value,
+        key_value: document.getElementById('editKeyValue').value,
+        is_active: document.getElementById('editKeyActive').checked
+    };
+    
+    try {
+        const response = await fetch(`/api/api-keys/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('API key updated successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editKeyModal')).hide();
+            loadApiKeys();
+            loadSettingsHistory();
+        } else {
+            showToast('Error: ' + data.error, 'error');
+        }
+    } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+
+// Delete key
+async function deleteKey(id) {
+    if (confirm('Are you sure you want to delete this API key?')) {
+        try {
+            const response = await fetch(`/api/api-keys/${id}`, {
+                method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast('API key deleted successfully!', 'success');
+                loadApiKeys();
+                loadSettingsHistory();
+            } else {
+                showToast('Error: ' + data.error, 'error');
+            }
+        } catch (error) {
+            showToast('Error: ' + error.message, 'error');
+        }
+    }
+}
+
+// Load settings history
+async function loadSettingsHistory() {
+    try {
+        const response = await fetch('/api/settings/history');
+        const data = await response.json();
+        
+        if (data.success && data.history && data.history.length > 0) {
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+            document.getElementById('noHistory').style.display = 'none';
+            
+            data.history.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(entry.timestamp).toLocaleString()}</td>
+                    <td><span class="badge bg-info">${entry.setting_type}</span></td>
+                    <td><small>${entry.changes || 'N/A'}</small></td>
+                    <td><small class="text-muted">${entry.action || 'Updated'}</small></td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            document.getElementById('noHistory').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error loading history:', error);
+    }
+}
+
+// Display current model
+function displayCurrentModel(formData) {
+    document.getElementById('displayProvider').textContent = formData.provider || 'Not set';
+    document.getElementById('displayModel').textContent = formData.model || 'Not set';
+    document.getElementById('displayTemp').textContent = formData.temperature || '0.7';
+    document.getElementById('displayUpdated').textContent = new Date().toLocaleString();
+    document.getElementById('currentModelDisplay').style.display = 'block';
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const title = document.getElementById('toastTitle');
+    const body = document.getElementById('toastMessage');
+    
+    title.textContent = type === 'success' ? 'Success' : 'Error';
+    body.textContent = message;
+    toast.classList.remove('bg-success', 'bg-danger');
+    toast.classList.add(type === 'success' ? 'bg-success' : 'bg-danger');
+    
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadApiKeys();
+    loadSettingsHistory();
+});
+</script>
+
+{% endblock %}

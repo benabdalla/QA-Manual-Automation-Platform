@@ -1,0 +1,804 @@
+{% extends "base.html" %}
+
+{% block title %}Code Generator - Ines QA Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row">
+        <!-- Header -->
+        <div class="col-12 mb-4">
+            <h1 class="mb-2">
+                <i class="fas fa-code"></i> Test Code Generator
+            </h1>
+            <p class="text-muted">Generate test code for your automation framework using AI</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column - Settings -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog"></i> Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Agent Selection -->
+                    <div class="mb-3">
+                        <label for="agentSelect" class="form-label">
+                            <i class="fas fa-robot"></i> Select Agent (from setting_agent table)
+                        </label>
+                        <!-- This dropdown will be populated with all setting_agent for the current user -->
+                        <select id="agentSelect" class="form-select">
+                            <option value="">-- Select an agent from database --</option>
+                        </select>
+                        <small class="text-muted">Select an agent from your setting_agent table to auto-populate model and API key</small>
+                        <button type="button" id="createTestAgentBtn" class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="createTestAgent()" style="display: none;">
+                            <i class="fas fa-plus"></i> Create Test Agent
+                        </button>
+                    </div>
+
+                    <hr>
+
+                    <!-- Model Selection -->
+                    <div class="mb-3">
+                        <label for="modelSelect" class="form-label">
+                            <i class="fas fa-brain"></i> LLM Model
+                        </label>
+                        <select id="modelSelect" class="form-select">
+                            <option value="">Loading models...</option>
+                        </select>
+                        <small class="text-muted">Select the AI model for code generation</small>
+                    </div>
+
+                    <!-- API Key Selection -->
+                    <div class="mb-3">
+                        <label for="apiKeyDisplay" class="form-label">
+                            <i class="fas fa-key"></i> API Key
+                        </label>
+                        <div class="input-group">
+                            <input type="text" id="apiKeyDisplay" class="form-control bg-light" placeholder="Automatically populated from selected agent" readonly>
+                            <input type="hidden" id="apiKeySelect">
+                        </div>
+                        <small class="text-muted">Auto-populated from agent (masked for security)</small>
+                    </div>
+
+                    <hr>
+
+                    <!-- Framework Selection -->
+                    <div class="mb-3">
+                        <label for="frameworkSelect" class="form-label">
+                            <i class="fas fa-tools"></i> Testing Framework
+                        </label>
+                        <select id="frameworkSelect" class="form-select" onchange="updateLanguages()">
+                            <option value="">Select a framework...</option>
+                            <option value="cypress">Cypress</option>
+                            <option value="playwright">Playwright</option>
+                            <option value="selenium">Selenium</option>
+                        </select>
+                        <small class="text-muted">Choose your testing framework</small>
+                    </div>
+
+                    <!-- Language Selection -->
+                    <div class="mb-3">
+                        <label for="languageSelect" class="form-label">
+                            <i class="fas fa-language"></i> Programming Language
+                        </label>
+                        <select id="languageSelect" class="form-select">
+                            <option value="">Select a framework first...</option>
+                        </select>
+                        <small class="text-muted">Available languages depend on framework</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Column - Prompt -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-edit"></i> Test Scenario / Gherkin Format</h5>
+                </div>
+                <div class="card-body">
+                    <textarea 
+                        id="promptTextarea" 
+                        class="form-control" 
+                        rows="12" 
+                        placeholder="Describe your test scenario in Gherkin format or natural language...&#10;&#10;Example (Gherkin):&#10;Given I am on the login page&#10;When I enter valid credentials&#10;And I click the login button&#10;Then I should see the dashboard&#10;And the user profile should be displayed&#10;&#10;Or in natural language:&#10;Create a test that logs into the application, navigates to the dashboard, and verifies that the user profile is displayed correctly.">
+                    </textarea>
+                    <small class="text-muted d-block mt-2">
+                        <i class="fas fa-info-circle"></i> Use Gherkin format (Given/When/Then) or natural language. Be as detailed as possible for better code generation.
+                    </small>
+                </div>
+            </div>
+
+            <!-- Generate Button -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="btn-group w-100 mb-4" role="group">
+                        <button id="generateBtn" class="btn btn-success btn-lg" onclick="generateCode()" style="flex: 1;">
+                            <i class="fas fa-magic"></i> Generate code...
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="text-center mb-4" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Generating...</span>
+                </div>
+                <p class="mt-2">Generating test code...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm" id="resultsSection" style="display: none;">
+                <div class="card-header bg-success text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-0"><i class="fas fa-check-circle"></i> Generated Test Code</h5>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-sm btn-light" onclick="copyCode()">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                            <button class="btn btn-sm btn-light" onclick="downloadCode()">
+                                <i class="fas fa-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <span class="badge bg-primary">Framework: <span id="resultFramework"></span></span>
+                        <span class="badge bg-info ms-2">Language: <span id="resultLanguage"></span></span>
+                        <span class="badge bg-secondary ms-2">Model: <span id="resultModel"></span></span>
+                    </div>
+                    <pre id="generatedCodeBlock" style="max-height: 500px; overflow-y: auto;"><code></code></pre>
+                </div>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorAlert" class="alert alert-danger alert-dismissible fade show" role="alert" style="display: none;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorMessage"></span>
+                <button type="button" class="btn-close" onclick="closeError()"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 8px;
+    }
+
+    .card-header {
+        border-radius: 8px 8px 0 0;
+        font-weight: 500;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-select, .form-control {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .form-select:focus, .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    }
+
+    #generatedCodeBlock {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 1rem;
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+
+<script>
+    // Language options based on framework
+    const languageOptions = {
+        'cypress': ['TypeScript', 'JavaScript'],
+        'playwright': ['Java', 'JavaScript', 'Python', 'C#'],
+        'selenium': ['Java', 'JavaScript', 'Python', 'C#']
+    };
+
+    const languageValues = {
+        'cypress': ['typescript', 'javascript'],
+        'playwright': ['java', 'javascript', 'python', 'csharp'],
+        'selenium': ['java', 'javascript', 'python', 'csharp']
+    };
+
+    // Load initial data
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAgents();
+        loadAgentSettings();
+    });
+
+    async function loadAgents() {
+        try {
+            // Fetch all agents ordered by setting_name ASC
+            const response = await fetch('/api/code-generator/agents?order_by=setting_name');
+            const data = await response.json();
+
+            const agentSelect = document.getElementById('agentSelect');
+            const createTestAgentBtn = document.getElementById('createTestAgentBtn');
+            agentSelect.innerHTML = '<option value="">-- Select an agent from database --</option>';
+
+            if (data.success && data.agents && data.agents.length > 0) {
+                // Sort by name in JS as fallback if backend doesn't support order_by param
+                data.agents.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                data.agents.forEach(agent => {
+                    const option = document.createElement('option');
+                    option.value = agent.id;
+                    option.textContent = agent.name;
+                    option.dataset.provider = agent.llm_provider || '';
+                    option.dataset.model = agent.llm_model_name || '';
+                    option.dataset.apiKey = agent.llm_api_key || '';
+                    agentSelect.appendChild(option);
+                });
+                // Auto-select the first agent
+                agentSelect.value = data.agents[0].id;
+                loadAgentDetails();
+                createTestAgentBtn.style.display = 'none';
+            } else {
+                agentSelect.innerHTML += '<option disabled>No agents found - create one below</option>';
+                createTestAgentBtn.style.display = 'block';
+            }
+        } catch (error) {
+            showError('Failed to load agents: ' + error.message);
+        }
+    }
+
+    async function createTestAgent() {
+        try {
+            console.log("Creating test agent...");
+            
+            const createTestAgentBtn = document.getElementById('createTestAgentBtn');
+            createTestAgentBtn.disabled = true;
+            createTestAgentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            
+            const response = await fetch('/api/code-generator/create-test-agent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            console.log("Test agent creation response:", data);
+            
+            if (data.success) {
+                showError('✅ Test agent created! Reloading agents...');
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showError("Failed to create test agent: " + (data.error || "Unknown error"));
+                createTestAgentBtn.disabled = false;
+                createTestAgentBtn.innerHTML = '<i class="fas fa-plus"></i> Create Test Agent';
+            }
+        } catch (error) {
+            console.error('Error creating test agent:', error);
+            showError('Failed to create test agent: ' + error.message);
+            const createTestAgentBtn = document.getElementById('createTestAgentBtn');
+            createTestAgentBtn.disabled = false;
+            createTestAgentBtn.innerHTML = '<i class="fas fa-plus"></i> Create Test Agent';
+        }
+    }
+
+    async function loadAgentDetails() {
+        const agentSelect = document.getElementById('agentSelect');
+        const agentId = agentSelect.value;
+
+        console.log("Loading agent details for ID:", agentId);
+
+        if (!agentId) {
+            // Clear fields if no agent selected
+            document.getElementById('modelSelect').innerHTML = '<option value="">Select a model...</option>';
+            document.getElementById('apiKeyDisplay').value = '';
+            document.getElementById('apiKeySelect').value = '';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/code-generator/agent/${agentId}`);
+            const data = await response.json();
+
+            console.log("Agent details response:", data);
+
+            if (data.success) {
+                const agent = data.agent;
+                
+                // Set model - clear and add new option
+                const modelSelect = document.getElementById('modelSelect');
+                modelSelect.innerHTML = '<option value="">Select a model...</option>';
+                
+                if (agent.llm_model_name) {
+                    const modelOption = document.createElement('option');
+                    modelOption.value = agent.llm_model_name;
+                    modelOption.textContent = agent.llm_model_name;
+                    modelOption.selected = true;
+                    modelSelect.appendChild(modelOption);
+                    console.log("Added model option:", agent.llm_model_name);
+                }
+                
+                // Set API key display - show masked key with provider
+                let apiKeyDisplay = '';
+                if (agent.llm_api_key) {
+                    const keyLength = agent.llm_api_key.length;
+                    const maskedKey = 'sk-' + '*'.repeat(Math.min(keyLength - 6, 20)) + agent.llm_api_key.slice(-4);
+                    apiKeyDisplay = `${agent.llm_provider}: ${maskedKey}`;
+                } else {
+                    apiKeyDisplay = `${agent.llm_provider}: Not set`;
+                }
+                
+                document.getElementById('apiKeyDisplay').value = apiKeyDisplay;
+                document.getElementById('apiKeySelect').value = agent.llm_api_key || '';
+                
+                console.log("Agent details loaded successfully", {
+                    provider: agent.llm_provider,
+                    model: agent.llm_model_name,
+                    hasApiKey: !!agent.llm_api_key
+                });
+            } else {
+                console.error("API error:", data.error);
+                showError('Failed to load agent details: ' + (data.error || "Unknown error"));
+            }
+        } catch (error) {
+            console.error('Error loading agent details:', error);
+            showError('Failed to load agent details: ' + error.message);
+        }
+    }
+
+    async function loadAgentSettings() {
+        try {
+            const response = await fetch('/api/code-generator/agent-settings');
+            const data = await response.json();
+
+            if (data.success) {
+                // Populate model select (fallback for manual selection)
+                const modelSelect = document.getElementById('modelSelect');
+                if (modelSelect.options.length === 1) { // Only if not already populated
+                    data.agent_settings.forEach(setting => {
+                        const option = document.createElement('option');
+                        option.value = setting.llm_model_name;
+                        option.textContent = setting.llm_model_name;
+                        option.dataset.provider = setting.llm_provider;
+                        modelSelect.appendChild(option);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+        }
+    }
+
+    function updateLanguages() {
+        const framework = document.getElementById('frameworkSelect').value.toLowerCase();
+        const languageSelect = document.getElementById('languageSelect');
+
+        if (!framework) {
+            languageSelect.innerHTML = '<option value="">Select a framework first...</option>';
+            return;
+        }
+
+        const languages = languageOptions[framework] || [];
+        languageSelect.innerHTML = '<option value="">Select a language...</option>';
+
+        languages.forEach((lang, index) => {
+            const option = document.createElement('option');
+            option.value = languageValues[framework][index];
+            option.textContent = lang;
+            languageSelect.appendChild(option);
+        });
+    }
+
+    async function createAgentAndGenerate() {
+        const frameworkSelect = document.getElementById('frameworkSelect');
+        const languageSelect = document.getElementById('languageSelect');
+        const promptTextarea = document.getElementById('promptTextarea');
+        const modelSelect = document.getElementById('modelSelect');
+        const apiKeySelect = document.getElementById('apiKeySelect');
+        
+        // Validation
+        if (!frameworkSelect.value) {
+            showError('Please select a framework');
+            return;
+        }
+        if (!languageSelect.value) {
+            showError('Please select a language');
+            return;
+        }
+        if (!promptTextarea.value.trim()) {
+            showError('Please enter a test scenario or description');
+            return;
+        }
+        if (!modelSelect.value) {
+            showError('Please select an LLM model');
+            return;
+        }
+        if (!apiKeySelect.value) {
+            showError('Please provide an API key');
+            return;
+        }
+
+        const frameworkText = frameworkSelect.options[frameworkSelect.selectedIndex].text;
+        const languageText = languageSelect.options[languageSelect.selectedIndex].text;
+        const modelText = modelSelect.options[modelSelect.selectedIndex].text;
+
+        try {
+            console.log("🔨 Creating agent with config...");
+            
+            const createBtn = document.getElementById('createAndGenerateBtn');
+            createBtn.disabled = true;
+            createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Agent...';
+
+            const createResponse = await fetch('/api/code-generator/create-agent-with-config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model_name: modelSelect.value,
+                    llm_provider: modelText.toLowerCase().includes('gpt') ? 'openai' : 
+                                 modelText.toLowerCase().includes('gemini') ? 'google' :
+                                 modelText.toLowerCase().includes('claude') ? 'anthropic' :
+                                 modelText.toLowerCase().includes('deepseek') ? 'deepseek' : 'openai',
+                    llm_api_key: apiKeySelect.value,
+                    framework: frameworkText,
+                    language: languageText,
+                    scenario: promptTextarea.value,
+                    temperature: 0.7
+                })
+            });
+
+            const createData = await createResponse.json();
+            console.log("Agent creation response:", createData);
+
+            if (createData.success) {
+                console.log(`✅ Agent ${createData.action}:`, createData.agent_id);
+                const actionMsg = createData.action === 'updated' ? 'updated' : 'created';
+                showError(`✅ Agent ${actionMsg} successfully! Now generating code...`);
+                
+                // Auto-select the agent
+                document.getElementById('agentSelect').value = createData.agent_id;
+                
+                // Wait a moment then generate
+                setTimeout(() => {
+                    generateCode();
+                }, 1000);
+            } else {
+                showError("Failed to create/update agent: " + (createData.error || "Unknown error"));
+                createBtn.disabled = false;
+                createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Create Agent & Generate';
+            }
+        } catch (error) {
+            console.error('Error creating agent:', error);
+            showError('Failed to create agent: ' + error.message);
+            const createBtn = document.getElementById('createAndGenerateBtn');
+            createBtn.disabled = false;
+            createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Create Agent & Generate';
+        }
+    }
+
+    async function generateCode() {
+        const frameworkSelect = document.getElementById('frameworkSelect');
+        const languageSelect = document.getElementById('languageSelect');
+        const promptTextarea = document.getElementById('promptTextarea');
+        const modelSelect = document.getElementById('modelSelect');
+        const apiKeyDisplay = document.getElementById('apiKeyDisplay');
+        const apiKeySelect = document.getElementById('apiKeySelect');
+        const agentSelect = document.getElementById('agentSelect');
+        
+        // Check if elements exist
+        if (!frameworkSelect || !languageSelect || !promptTextarea || !modelSelect) {
+            showError('Error: Required form elements not found');
+            return;
+        }
+
+        const framework = frameworkSelect.value;
+        const frameworkText = frameworkSelect.options[frameworkSelect.selectedIndex].text;
+        const language = languageSelect.value;
+        const languageText = languageSelect.options[languageSelect.selectedIndex].text;
+        const scenarioContent = promptTextarea.value;
+        const model = modelSelect.value;
+        const modelText = modelSelect.options[modelSelect.selectedIndex].text;
+        const apiKeyDisplayVal = apiKeyDisplay ? apiKeyDisplay.value : '';
+        const apiKey = apiKeySelect ? apiKeySelect.value : '';
+        const agentId = agentSelect ? agentSelect.value : '';
+
+        // Validation
+        if (!framework) {
+            showError('Please select a framework');
+            return;
+        }
+        if (!language) {
+            showError('Please select a language');
+            return;
+        }
+        if (!scenarioContent.trim()) {
+            showError('Please enter a test scenario or description');
+            return;
+        }
+        if (!model) {
+            showError('Please select an LLM model or agent');
+            return;
+        }
+
+        // Build comprehensive prompt with all context
+        const comprehensivePrompt = `
+=== TEST CODE GENERATION REQUEST ===
+
+**Configuration:**
+- Testing Framework: ${frameworkText}
+- Programming Language: ${languageText}
+- LLM Model: ${modelText}
+- API Key: ${apiKeyDisplayVal}
+
+**Test Scenario / Gherkin:**
+${scenarioContent}
+
+**Task:**
+Generate ${language.toUpperCase()} test code for the ${frameworkText} framework based on the scenario above.
+The code should:
+1. Follow ${frameworkText} best practices
+2. Be written in ${languageText}
+3. Implement the scenario described above
+4. Include proper error handling and assertions
+5. Be production-ready and well-commented
+
+Please generate the complete test code:
+`;
+
+        // Show loading
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const generateBtn = document.getElementById('generateBtn');
+        const errorAlert = document.getElementById('errorAlert');
+        
+        if (loadingSpinner) loadingSpinner.style.display = 'block';
+        if (generateBtn) generateBtn.disabled = true;
+        if (errorAlert) errorAlert.style.display = 'none';
+
+        try {
+            console.log("📤 Sending code generation request with:");
+            console.log("  Framework:", frameworkText);
+            console.log("  Language:", languageText);
+            console.log("  Model:", modelText);
+            console.log("  API Key Provider:", apiKeyDisplayVal.split(':')[0]);
+            console.log("  Scenario length:", scenarioContent.length, "characters");
+            
+            const requestBody = {
+                framework: framework,
+                language: language,
+                scenario: scenarioContent,
+                model: model,
+                api_key: apiKey || null,
+                agent_id: agentId || null,
+                context: {
+                    framework_name: frameworkText,
+                    language_name: languageText,
+                    model_name: modelText,
+                    api_key_provider: apiKeyDisplayVal.split(':')[0]
+                }
+            };
+            
+            console.log("📋 Request body:", JSON.stringify(requestBody, null, 2));
+            console.log("📤 Sending to /api/code-generator/generate");
+            
+            const response = await fetch('/api/code-generator/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log("📥 Response status:", response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("❌ HTTP Error:", response.status, errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            const data = await response.json();
+            console.log("📥 Response data received");
+            console.log("  Success:", data.success);
+            console.log("  Generated code length:", data.generated_code?.length || 0, "characters");
+
+            if (data.success) {
+                console.log("✅ Code generation successful!");
+                if (data.api_error) {
+                    console.warn("⚠️ API Error (using fallback template):", data.api_error);
+                }
+                displayResults(data);
+            } else {
+                console.error("❌ Generation failed:", data.error);
+                throw new Error(data.error || 'Failed to generate code');
+            }
+        } catch (error) {
+            console.error('❌ Error during code generation:', error);
+            const errorMsg = 'Error: ' + error.message;
+            console.log("📢 Showing error:", errorMsg);
+            showError(errorMsg);
+        } finally {
+            const spinner = document.getElementById('loadingSpinner');
+            const btn = document.getElementById('generateBtn');
+            if (spinner) spinner.style.display = 'none';
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    function displayResults(data) {
+        console.log("📊 Displaying results with data:", data);
+        
+        try {
+            const framework = data.framework || 'Unknown';
+            const language = data.language || 'Unknown';
+            const model = data.model_used || 'Unknown';
+            const code = data.generated_code || 'No code generated';
+            const apiError = data.api_error;
+            
+            console.log("Setting framework:", framework);
+            console.log("Setting language:", language);
+            console.log("Setting model:", model);
+            console.log("Setting code length:", code.length, "characters");
+              console.log("Setting code length:", code, "");
+            if (apiError) {
+                console.warn("API Error:", apiError);
+            }          
+            document.getElementById('resultFramework').textContent = framework;
+            document.getElementById('resultLanguage').textContent = language;
+            document.getElementById('resultModel').textContent = model;
+            
+            const codeBlock = document.getElementById('generatedCodeBlock');
+            if (codeBlock && codeBlock.querySelector('code')) {
+                codeBlock.querySelector('code').textContent = code;
+            } else {
+                codeBlock.textContent = code;
+            }
+            
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.style.display = 'block';
+            
+            // Show API error warning if present
+            if (apiError) {
+                console.warn("⚠️ Generation used fallback template due to API error");
+                showError(`⚠️ Note: Using template code because LLM API failed: ${apiError}`);
+            }
+            
+            console.log("✅ Results section displayed");
+
+            // Scroll to results
+            setTimeout(() => {
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        } catch (error) {
+            console.error("❌ Error displaying results:", error);
+            showError("Error displaying results: " + error.message);
+        }
+    }
+
+    function copyCode() {
+        try {
+            const codeBlock = document.getElementById('generatedCodeBlock');
+            if (!codeBlock) {
+                showError('Error: Code block not found');
+                return;
+            }
+            
+            // Get text content from the code element or code block
+            let code = codeBlock.querySelector('code') ? 
+                       codeBlock.querySelector('code').textContent : 
+                       codeBlock.textContent;
+            
+            if (!code || code.trim().length === 0) {
+                showError('No code to copy');
+                return;
+            }
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(code).then(() => {
+                // Find the copy button
+                const copyBtn = document.querySelector('#resultsSection .btn-light');
+                if (copyBtn) {
+                    const originalHTML = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    copyBtn.style.backgroundColor = '#28a745';
+                    copyBtn.style.color = 'white';
+                    
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalHTML;
+                        copyBtn.style.backgroundColor = '';
+                        copyBtn.style.color = '';
+                    }, 2000);
+                }
+            }).catch(err => {
+                console.error('Clipboard error:', err);
+                showError('Failed to copy code: ' + err.message);
+            });
+        } catch (error) {
+            console.error('Error in copyCode:', error);
+            showError('Error: ' + error.message);
+        }
+    }
+
+    function downloadCode() {
+        const code = document.getElementById('generatedCodeBlock').textContent;
+        const framework = document.getElementById('resultFramework').textContent;
+        const language = document.getElementById('resultLanguage').textContent;
+        
+        const fileExtensions = {
+            'typescript': '.ts',
+            'javascript': '.js',
+            'java': '.java',
+            'python': '.py',
+            'csharp': '.cs'
+        };
+
+        const ext = fileExtensions[language.toLowerCase()] || '.txt';
+        const filename = `test-${framework.toLowerCase()}-${language.toLowerCase()}${ext}`;
+
+        const element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(code));
+        element.setAttribute('download', filename);
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    }
+
+    function showError(message) {
+        const errorMessage = document.getElementById('errorMessage');
+        const errorAlert = document.getElementById('errorAlert');
+        
+        console.log("🔴 Showing error:", message);
+        
+        if (errorMessage) {
+            errorMessage.textContent = message;
+        } else {
+            console.error("⚠️  errorMessage element not found");
+            alert('Error: ' + message);
+        }
+        
+        if (errorAlert) {
+            errorAlert.style.display = 'block';
+        } else {
+            console.error("⚠️  errorAlert element not found");
+        }
+    }
+
+    function closeError() {
+        const errorAlert = document.getElementById('errorAlert');
+        if (errorAlert) {
+            errorAlert.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}
