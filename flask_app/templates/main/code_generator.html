@@ -28,7 +28,7 @@
                             <i class="fas fa-robot"></i> Select Agent (from setting_agent table)
                         </label>
                         <!-- This dropdown will be populated with all setting_agent for the current user -->
-                        <select id="agentSelect" class="form-select">
+                           <select id="agentSelect" class="form-select" onchange="loadAgentDetails()">
                             <option value="">-- Select an agent from database --</option>
                         </select>
                         <small class="text-muted">Select an agent from your setting_agent table to auto-populate model and API key</small>
