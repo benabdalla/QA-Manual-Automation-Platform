@@ -1,7 +1,7 @@
 """
 Main Routes for Flask App
 """
-from flask import Blueprint, render_template, redirect, url_for, request, jsonify, current_app
+from flask import Blueprint, render_template, redirect, session, url_for, request, jsonify, current_app
 from flask_login import login_required, current_user
 from flask_app.models import AgentSettings, JiraXraySettings
 from flask_app import db
@@ -11,6 +11,7 @@ import json
 import requests
 from requests.auth import HTTPBasicAuth
 import google.generativeai as genai
+
 
 main_bp = Blueprint('main', __name__)
 
@@ -113,11 +114,20 @@ def test_case_generator():
     return render_template('main/test_case_generator.html')
 
 
+
+@main_bp.route("/api/me")
+@login_required
+def get_me():
+    return jsonify({
+        "user_id": current_user.id
+    })
+
 @main_bp.route('/test-ia-agent')
 @login_required
 def test_ia_agent():
     """Test IA Agent page"""
-    return render_template('main/test_ia_agent.html')
+    
+    return render_template('main/test_ia_agent.html', user_id=session.get("user_id"))
 
 
 @main_bp.route('/code-generator')

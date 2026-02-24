@@ -7,32 +7,22 @@
       },
       "fixVersions": [
         {
-          "name": "w2524"
+          "name": "w25"
         }
       ],
-      "summary": "Ajout de champs produit à l'enregistrement des parties intéressées",
+      "summary": "Ajout de champs produit à l'enregistrement des parties intéresséesnghj",
       "description": "Vérifier l'ajout et le fonctionnement des champs liés au produit dans la section d'enregistrement d'une fiche partie intéressée.\nPréconditions: L'utilisateur doit avoir accès au module des parties intéressées. Un ou plusieurs produits doivent être configurés dans le système."
     },
     "steps": [
       {
-        "action": "Accéder à la fiche d'une partie intéressée et ouvrir la section d'enregistrement.",
-        "data": "",
-        "result": "La section d'enregistrement doit contenir les nouveaux champs suivants: Champs produit (bouton sélectionner), Code produit, Numéro OF, N° Lot, Qté produite, Qté Détectée, Unité, Fournisseur."
-      },
-      {
-        "action": "Cliquer sur le bouton 'Sélectionner' pour le champ 'Champs produit'.",
-        "data": "",
-        "result": "Un pop-up doit s'afficher avec une liste de produits et leurs codes."
-      },
-      {
-        "action": "Rechercher un produit spécifique dans le pop-up.",
-        "data": "",
-        "result": "Le pop-up doit filtrer les produits et afficher le produit recherché."
-      },
-      {
         "action": "Sélectionner un produit dans le pop-up et valider.",
         "data": "",
         "result": "Le produit sélectionné doit être associé à la fiche de la partie intéressée. Les champs 'Code produit', 'Numéro OF', 'N° Lot', 'Qté produite', 'Qté Détectée', 'Unité', 'Fournisseur' doivent pouvoir être renseignés pour ce produit."
+      },
+      {
+        "action": "qsfgrb",
+        "data": "",
+        "result": "dsfdf"
       }
     ],
     "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"

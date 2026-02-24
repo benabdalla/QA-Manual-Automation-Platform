@@ -1,7 +1,7 @@
 """
 Authentication Routes for Flask App
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, make_response, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash
 from flask_app import db, login_manager
@@ -49,7 +49,7 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        remember_me = request.form.get('remember_me', False)
+        remember_me =  request.form.get('remember_me', False)
         
         if not username or not password:
             flash('Please enter both username and password', 'error')
@@ -58,6 +58,7 @@ def login():
         user = User.query.filter(
             (User.username == username) | (User.email == username)
         ).first()
+      
         
         if user is None or not user.check_password(password):
             flash('Invalid username or password', 'error')
@@ -71,8 +72,7 @@ def login():
         user.last_activity = datetime.utcnow()
         db.session.commit()
         
-        login_user(user, remember=remember_me)
-        
+        login_user(user, remember=remember_me)    
         next_page = request.args.get('next')
         if not next_page or next_page.startswith('/'):
             next_page = url_for('main.home')
@@ -80,7 +80,16 @@ def login():
             next_page = url_for('main.home')
         
         flash(f'Welcome back, {user.username}!', 'success')
-        return redirect(next_page)
+        resp = make_response(redirect(next_page))  # ← redirect wrapped
+        resp.set_cookie(
+            "user_id",
+            str(user.id),
+            path="/",
+            httponly=True,
+            secure=False  # True only if HTTPS
+        )
+
+        return resp
     
     return render_template('auth/login.html')
 

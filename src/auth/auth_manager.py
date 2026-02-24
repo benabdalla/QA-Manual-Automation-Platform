@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 from src.auth.database import Database
 from src.auth.jwt_handler import JWTHandler
+import gradio as gr
 
 
 class AuthManager:
@@ -332,55 +333,46 @@ class AuthManager:
         return self.db.delete_user_config_by_name(user_id, config_name)
     
     # ============ Agent Settings Management Methods ============
-    
-    def save_agent_setting(self, setting_name: str, settings: Dict[str, Any], description: str = "") -> Dict[str, Any]:
-        """
-        Save an agent setting for the current user
-        
-        Args:
-            setting_name: Name for this agent setting
-            settings: Dictionary of agent settings
-            description: Optional description
-        
-        Returns:
-            Dictionary with success status and message/error
-        """
+
+    def get_current_user_id(self):
+        if self._current_user:
+            return self._current_user.get("id") or self._current_user.get("user_id")
+        return None
+
+    def save_agent_setting(self, user_id: int, setting_name: str, settings: Dict[str, Any]) -> Dict[str, Any]:
         if not self.is_authenticated():
             return {"success": False, "error": "Not authenticated"}
-        
+
         if not setting_name or not setting_name.strip():
             return {"success": False, "error": "Setting name is required"}
-        
-        user_id = self._current_user["id"]
-        return self.db.save_agent_setting(user_id, setting_name.strip(), settings, description)
-    
-    def get_agent_settings_list(self) -> Dict[str, Any]:
+
+        if not user_id:
+            return {"success": False, "error": "User ID is required"}
+
+        print(f"Saving setting for user_id: {user_id}")
+        return self.db.save_agent_setting(int(user_id), setting_name.strip(), settings,description="")
+
+    def get_agent_settings_list(self,user_id:int=None) -> Dict[str, Any]:
         """
         Get all agent settings for the current user
         
         Returns:
             Dictionary with success status and list of settings
         """
-        if not self.is_authenticated():
-            return {"success": False, "error": "Not authenticated", "settings": []}
-        
-        user_id = self._current_user["id"]
+
         return self.db.get_agent_settings_list(user_id)
     
-    def load_agent_setting(self, setting_name: str) -> Dict[str, Any]:
+    def load_agent_setting(self, setting_name: str,user_id:int=None) -> Dict[str, Any]:
         """
         Load a specific agent setting by name
         
         Args:
             setting_name: Name of the setting to load
-        
+
         Returns:
             Dictionary with success status and setting data
         """
-        if not self.is_authenticated():
-            return {"success": False, "error": "Not authenticated"}
-        
-        user_id = self._current_user["id"]
+
         return self.db.get_agent_setting_by_name(user_id, setting_name)
     
     def load_agent_setting_by_id(self, setting_id: int) -> Dict[str, Any]:
@@ -425,11 +417,7 @@ class AuthManager:
         Returns:
             Dictionary with success status and message/error
         """
-        if not self.is_authenticated():
-            return {"success": False, "error": "Not authenticated"}
-        
-        user_id = self._current_user["id"]
-        return self.db.delete_agent_setting_by_name(user_id, setting_name)
+        return self.db.delete_agent_setting_by_name(setting_name)
     
     def get_api_key_for_provider(self, provider: str) -> Optional[str]:
         """

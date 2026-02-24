@@ -88,6 +88,19 @@ function refresh() {
 
 // ============ Main Initialization ============
 document.addEventListener('DOMContentLoaded', function() {
+  window.USER_ID = "{{ user_id }}";
+  // wait for gradio to render
+    setTimeout(() => {
+        const hidden = document.querySelector(
+          'input[type="text"][aria-label=""]'
+        );
+        if (hidden) {
+            hidden.value = window.USER_ID;
+            hidden.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }, 1000);
+});
+
     setupThemeToggle();
     setupAnimations();
     setupButtonEffects();

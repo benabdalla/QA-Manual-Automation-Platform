@@ -349,38 +349,53 @@ class Database:
             
         except Error as e:
             return {"success": False, "error": str(e)}
-    
-    def save_agent_setting(self, user_id: int, setting_name: str, settings: Dict[str, Any], description: str = "") -> Dict[str, Any]:
-        """Save or update an agent setting"""
+
+    def save_agent_setting(self, user_id: int, setting_name: str, settings: Dict[str, Any], description: str = "") -> \
+    Dict[str, Any]:
         try:
-            if not self.connection or not self.connection.is_connected():
-                self.connect()
-            
-            if isinstance(settings, str):
-                try:
-                    settings = json.loads(settings)
-                except json.JSONDecodeError:
-                    settings = {}
-            
             settings_json = json.dumps(settings)
+            now = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+
+            print(f"DEBUG - user_id: {user_id}")
+            print(f"DEBUG - setting_name: {setting_name}")
+            print(f"DEBUG - settings_json: {settings_json[:100]}")
+            print(f"DEBUG - connection object: {self.connection}")
+            print(f"DEBUG - connection type: {type(self.connection)}")
+
             cursor = self.connection.cursor()
-            
-            cursor.execute("""
-                INSERT INTO agent_settings (user_id, setting_name, settings_data, description)
-                VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE 
-                    settings_data = VALUES(settings_data),
-                    description = VALUES(description),
-                    updated_at = CURRENT_TIMESTAMP
-            """, (user_id, setting_name, settings_json, description))
-            
+
+            # Check existing
+            cursor.execute(
+                "SELECT id FROM agent_settings WHERE user_id = %s AND setting_name = %s",
+                (user_id, setting_name)
+            )
+            existing = cursor.fetchone()
+            print(f"DEBUG - existing record: {existing}")
+
+            if existing:
+                cursor.execute(
+                    "UPDATE agent_settings SET settings_data = %s, description = %s, updated_at = %s WHERE user_id = %s AND setting_name = %s",
+                    (settings_json, description, now, user_id, setting_name)
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO agent_settings (user_id, setting_name, settings_data, description, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (user_id, setting_name, settings_json, description, now, now)
+                )
+
+            print(f"DEBUG - rows affected: {cursor.rowcount}")
             self.connection.commit()
+            print(f"DEBUG - commit done")
+            cursor.close()
+
             return {"success": True, "message": f"Agent setting '{setting_name}' saved successfully"}
-            
-        except Error as e:
+
+        except Exception as e:
+            print(f"DEBUG - EXCEPTION: {e}")
+            import traceback
+            traceback.print_exc()
             return {"success": False, "error": str(e)}
-    
-    def get_agent_settings_list(self, user_id: int) -> Dict[str, Any]:
+    def get_agent_settings_list(self,  user_id: int = None) -> Dict[str, Any]:
         """Get all agent settings for a user"""
         try:
             if not self.connection or not self.connection.is_connected():
@@ -438,28 +453,41 @@ class Database:
             
         except Error as e:
             return {"success": False, "error": str(e)}
-    
+
     def delete_agent_setting_by_name(self, user_id: int, setting_name: str) -> Dict[str, Any]:
-        """Delete agent setting by name"""
         try:
             if not self.connection or not self.connection.is_connected():
                 self.connect()
-            
+
             cursor = self.connection.cursor()
-            cursor.execute("""
-                DELETE FROM agent_settings 
-                WHERE setting_name = %s AND user_id = %s
-            """, (setting_name, user_id))
-            
+
+            # Debug - check what exists first
+            cursor.execute(
+                "SELECT id, user_id, setting_name FROM agent_settings WHERE setting_name = %s",
+                (setting_name,)
+            )
+            rows = cursor.fetchall()
+            print(f"DEBUG DB - looking for user_id={user_id}, setting_name={setting_name}")
+            print(f"DEBUG DB - found rows: {rows}")
+
+            cursor.execute(
+                "DELETE FROM agent_settings WHERE user_id = %s AND setting_name = %s",
+                (user_id, setting_name)
+            )
+
+            print(f"DEBUG DB - rowcount after delete: {cursor.rowcount}")
+
             if cursor.rowcount > 0:
                 self.connection.commit()
+                cursor.close()
                 return {"success": True, "message": f"Agent setting '{setting_name}' deleted successfully"}
             else:
+                cursor.close()
                 return {"success": False, "error": f"Agent setting '{setting_name}' not found"}
-            
-        except Error as e:
+
+        except Exception as e:
+            print(f"DEBUG DB - exception: {e}")
             return {"success": False, "error": str(e)}
-    
     def get_api_key_by_provider(self, user_id: int, provider: str) -> Optional[str]:
         """Get the API key for a specific LLM provider from saved agent settings."""
         try:

@@ -115,59 +115,7 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
                 info="Your API key (leave blank to use .env)"
             )
 
-    with gr.Group():
-        with gr.Row():
-            planner_llm_provider = gr.Dropdown(
-                choices=[provider for provider, model in config.model_names.items()],
-                label="Planner LLM Provider",
-                info="Select LLM provider for LLM",
-                value=None,
-                interactive=True
-            )
-            planner_llm_model_name = gr.Dropdown(
-                label="Planner LLM Model Name",
-                interactive=True,
-                allow_custom_value=True,
-                info="Select a model in the dropdown options or directly type a custom model name"
-            )
-        with gr.Row():
-            planner_llm_temperature = gr.Slider(
-                minimum=0.0,
-                maximum=2.0,
-                value=0.6,
-                step=0.1,
-                label="Planner LLM Temperature",
-                info="Controls randomness in model outputs",
-                interactive=True
-            )
-            planner_use_vision = gr.Checkbox(
-                label="Use Vision(Planner LLM)",
-                value=False,
-                info="Enable Vision(Input highlighted screenshot into LLM)",
-                interactive=True
-            )
-            planner_ollama_num_ctx = gr.Slider(
-                minimum=2 ** 8,
-                maximum=2 ** 16,
-                value=16000,
-                step=1,
-                label="Ollama Context Length",
-                info="Controls max context length model needs to handle (less = faster)",
-                visible=False,
-                interactive=True
-            )
-        with gr.Row():
-            planner_llm_base_url = gr.Textbox(
-                label="Base URL",
-                value="",
-                info="API endpoint URL (if required)"
-            )
-            planner_llm_api_key = gr.Textbox(
-                label="API Key",
-                type="password",
-                value="",
-                info="Your API key (leave blank to use .env)"
-            )
+
 
     with gr.Row():
         max_steps = gr.Slider(
@@ -216,13 +164,6 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
         ollama_num_ctx=ollama_num_ctx,
         llm_base_url=llm_base_url,
         llm_api_key=llm_api_key,
-        planner_llm_provider=planner_llm_provider,
-        planner_llm_model_name=planner_llm_model_name,
-        planner_llm_temperature=planner_llm_temperature,
-        planner_use_vision=planner_use_vision,
-        planner_ollama_num_ctx=planner_ollama_num_ctx,
-        planner_llm_base_url=planner_llm_base_url,
-        planner_llm_api_key=planner_llm_api_key,
         max_steps=max_steps,
         max_actions=max_actions,
         max_input_tokens=max_input_tokens,
@@ -240,16 +181,7 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
         inputs=[llm_provider],
         outputs=[llm_model_name]
     )
-    planner_llm_provider.change(
-        fn=lambda x: gr.update(visible=x == "ollama"),
-        inputs=[planner_llm_provider],
-        outputs=[planner_ollama_num_ctx]
-    )
-    planner_llm_provider.change(
-        lambda provider: update_model_dropdown(provider),
-        inputs=[planner_llm_provider],
-        outputs=[planner_llm_model_name]
-    )
+
 
     # ============ Database Settings Management (when authenticated) ============
     if auth_manager is not None:
@@ -302,25 +234,41 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             )
         
         settings_ids_state = gr.State(value={})
-        
-        def save_agent_setting_to_db(
-            setting_name, description,
-            override_prompt, extend_prompt, mcp_config,
-            provider, model, temp, vision, ollama_ctx, base_url, api_key,
-            p_provider, p_model, p_temp, p_vision, p_ollama_ctx, p_base_url, p_api_key,
-            steps, actions, tokens, tool_method
+
+        async def save_agent_setting_to_db(
+                setting_name, description,
+                override_prompt, extend_prompt, mcp_config,
+                provider, model, temp, vision, ollama_ctx, base_url, api_key,
+                steps, actions, tokens, tool_method,
+                request: gr.Request = None  # Gradio injects this - NOT in inputs list
         ):
             """Save current agent settings to database"""
             if auth_manager is None:
                 return gr.update(visible=True, value="❌ Authentication manager not initialized")
-            
+
             if not setting_name or not setting_name.strip():
                 return gr.update(visible=True, value="❌ Please enter a setting name")
-            
-            # Ensure user is authenticated for local development
-            if not auth_manager.is_authenticated():
-                auth_manager.set_current_user_directly(1, "local_user", "local@user.com")
-            
+
+            # Get user_id from cookies
+            user_id = None
+            if request is not None:
+                print(f"All cookies: {dict(request.cookies)}")
+                # Try common cookie names
+                user_id = (
+                        request.cookies.get("user_id") or
+                        request.cookies.get("userID") or
+                        request.cookies.get("userId")
+                )
+                print(f"user_id from cookie: {user_id}")
+
+            # Fallback to session if no cookie
+            if not user_id:
+                user_id = auth_manager.get_current_user_id()
+                print(f"user_id from session: {user_id}")
+
+            if not user_id:
+                return gr.update(visible=True, value="❌ Could not determine user ID")
+
             settings = {
                 'override_system_prompt': override_prompt or '',
                 'extend_system_prompt': extend_prompt or '',
@@ -332,22 +280,14 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
                 'ollama_num_ctx': ollama_ctx if ollama_ctx is not None else 16000,
                 'llm_base_url': base_url or '',
                 'llm_api_key': api_key or '',
-                'planner_llm_provider': p_provider or '',
-                'planner_llm_model_name': p_model or '',
-                'planner_llm_temperature': p_temp if p_temp is not None else 0.6,
-                'planner_use_vision': p_vision if p_vision is not None else False,
-                'planner_ollama_num_ctx': p_ollama_ctx if p_ollama_ctx is not None else 16000,
-                'planner_llm_base_url': p_base_url or '',
-                'planner_llm_api_key': p_api_key or '',
                 'max_steps': steps if steps is not None else 100,
                 'max_actions': actions if actions is not None else 10,
                 'max_input_tokens': tokens if tokens is not None else 128000,
                 'tool_calling_method': tool_method or 'auto'
             }
-            
+
             try:
-                # Pass settings dict directly (don't pre-stringify)
-                result = auth_manager.save_agent_setting(setting_name.strip(), settings, description or '')
+                result = auth_manager.save_agent_setting(int(user_id), setting_name.strip(), settings)
                 if result.get("success"):
                     return gr.update(visible=True, value=f"✅ {result['message']}")
                 else:
@@ -355,11 +295,30 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             except Exception as e:
                 logger.error(f"Exception during save: {e}", exc_info=True)
                 return gr.update(visible=True, value=f"❌ Error: {str(e)}")
-        
-        def refresh_settings_list():
+        def refresh_settings_list(request: gr.Request = None):
+
             """Refresh the list of saved agent settings"""
             try:
-                result = auth_manager.get_agent_settings_list()
+                # Get user_id from cookies
+                user_id = None
+                if request is not None:
+                    print(f"All cookies: {dict(request.cookies)}")
+                    # Try common cookie names
+                    user_id = (
+                            request.cookies.get("user_id") or
+                            request.cookies.get("userID") or
+                            request.cookies.get("userId")
+                    )
+                    print(f"user_id from cookie: {user_id}")
+
+                # Fallback to session if no cookie
+                if not user_id:
+                    user_id = auth_manager.get_current_user_id()
+                    print(f"user_id from session: {user_id}")
+
+                if not user_id:
+                    return gr.update(visible=True, value="❌ Could not determine user ID")
+                result = auth_manager.get_agent_settings_list(user_id)
             except Exception as e:
                 logger.error(f"Error refreshing settings: {e}")
                 return (gr.update(choices=[], value=None), {}, gr.update(value=[], visible=True), gr.update(visible=True, value=f"❌ Error: {str(e)}"))
@@ -395,12 +354,32 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             
             return (gr.update(choices=choices, value=choices[0] if choices else None), id_mapping, gr.update(value=table_data, visible=True), gr.update(visible=False))
         
-        def load_agent_setting_from_db(setting_name, settings_ids):
+        def load_agent_setting_from_db(setting_name, settings_ids,request: gr.Request = None):
             """Load agent settings from database"""
+
+                # Get user_id from cookies
+            user_id = None
+            if request is not None:
+                print(f"All cookies: {dict(request.cookies)}")
+                    # Try common cookie names
+            user_id = (
+                        request.cookies.get("user_id") or
+                        request.cookies.get("userID") or
+                         request.cookies.get("userId")
+                )
+            print(f"user_id from cookie: {user_id}")
+
+                # Fallback to session if no cookie
+            if not user_id:
+                    user_id = auth_manager.get_current_user_id()
+                    print(f"user_id from session: {user_id}")
+
+            if not user_id:
+                    return gr.update(visible=True, value="❌ Could not determine user ID")
             if not setting_name:
                 return tuple([gr.update(visible=True, value="❌ Please select a setting")] + [gr.update()] * 21)
             
-            result = auth_manager.load_agent_setting(setting_name)
+            result = auth_manager.load_agent_setting(setting_name,user_id)
             if not result.get("success"):
                 return tuple([gr.update(visible=True, value=f"❌ {result.get('error', 'Unknown error')}")] + [gr.update()] * 21)
             
@@ -437,24 +416,48 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
                 gr.update(value=s.get('max_input_tokens', 128000)),
                 gr.update(value=s.get('tool_calling_method', 'auto'))
             )
-        
-        def delete_agent_setting_from_db(setting_name, settings_ids):
-            """Delete agent settings from database"""
+
+        def delete_agent_setting_from_db(setting_name, settings_ids, request: gr.Request = None):
+            user_id = None
+            if request is not None:
+                user_id = (
+                        request.cookies.get("user_id") or
+                        request.cookies.get("userID") or
+                        request.cookies.get("userId")
+                )
+            if not user_id:
+                user_id = auth_manager.get_current_user_id()
+
             if not setting_name:
-                return (gr.update(visible=True, value="❌ Please select a setting"), gr.update(), settings_ids, gr.update())
-            
-            result = auth_manager.delete_agent_setting_by_name(setting_name)
+                return (
+                gr.update(visible=True, value="❌ Please select a setting"), gr.update(), settings_ids, gr.update())
+
+            print(f"DEBUG setting_name={setting_name}, settings_ids={settings_ids}")
+
+            # Get the real setting name from the id mapping
+            real_name = None
+            for name, sid in settings_ids.items():
+                if str(sid) == str(setting_name) or name == setting_name:
+                    real_name = name
+                    break
+
+            if not real_name:
+                real_name = setting_name  # fallback
+
+            print(f"DEBUG real_name={real_name}")
+            result = auth_manager.db.delete_agent_setting_by_name(int(user_id), real_name)
+
             if result.get("success"):
                 refresh_result = refresh_settings_list()
-                # Return: status, dropdown with updated choices, id_mapping, table
                 return (
                     gr.update(visible=True, value=f"✅ {result['message']}"),
-                    refresh_result[0],  # Updated dropdown choices
-                    refresh_result[1],  # Updated id_mapping
-                    refresh_result[2]   # Updated table
+                    refresh_result[0],
+                    refresh_result[1],
+                    refresh_result[2]
                 )
-            return (gr.update(visible=True, value=f"❌ {result.get('error', 'Unknown error')}"), gr.update(), settings_ids, gr.update())
-        
+            return (
+            gr.update(visible=True, value=f"❌ {result.get('error', 'Unknown error')}"), gr.update(), settings_ids,
+            gr.update())
         def show_setting_info(setting_name, settings_ids):
             """Show information about selected setting"""
             if not setting_name:
@@ -477,8 +480,6 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             fn=save_agent_setting_to_db,
             inputs=[setting_name_input, setting_description, override_system_prompt, extend_system_prompt, mcp_server_config,
                     llm_provider, llm_model_name, llm_temperature, use_vision, ollama_num_ctx, llm_base_url, llm_api_key,
-                    planner_llm_provider, planner_llm_model_name, planner_llm_temperature, planner_use_vision,
-                    planner_ollama_num_ctx, planner_llm_base_url, planner_llm_api_key,
                     max_steps, max_actions, max_input_tokens, tool_calling_method],
             outputs=[save_setting_status]
         )
@@ -492,8 +493,6 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             inputs=[settings_dropdown, settings_ids_state],
             outputs=[load_setting_status, override_system_prompt, extend_system_prompt, mcp_server_config,
                      llm_provider, llm_model_name, llm_temperature, use_vision, ollama_num_ctx, llm_base_url, llm_api_key,
-                     planner_llm_provider, planner_llm_model_name, planner_llm_temperature, planner_use_vision,
-                     planner_ollama_num_ctx, planner_llm_base_url, planner_llm_api_key,
                      max_steps, max_actions, max_input_tokens, tool_calling_method]
         )
         delete_setting_btn.click(

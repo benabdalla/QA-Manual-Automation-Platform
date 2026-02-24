@@ -439,7 +439,7 @@ class Database:
         except Error as e:
             return {"success": False, "error": str(e)}
     
-    def delete_agent_setting_by_name(self, user_id: int, setting_name: str) -> Dict[str, Any]:
+    def delete_agent_setting_by_name(self,  setting_name: str,user_id: int) -> Dict[str, Any]:
         """Delete agent setting by name"""
         try:
             if not self.connection or not self.connection.is_connected():
