@@ -226,6 +226,30 @@ JIRA_TOKEN_FILE = 'jira_token.txt'  # https://support.atlassian.com/atlassian-ac
 XRAY_URL = "https://xray.cloud.getxray.app/api/v2/import/test/bulk"
 XRAY_AUTH_JSON = 'xray_auth.json'  # File containing your XRAY API token https://community.atlassian.com/t5/Jira-Software-questions/Where-to-create-Xray-api-key/qaq-p/1923024
 
+@app.route("/", methods=["GET", "POST"])
+def index():
+    result = None
+    if request.method == "POST":
+        req = request.form["req"]
+        username = request.form["username"]
+        baseurl = request.form["baseurl"]
+        project_key = request.form["project_key"]
+        version_name = request.form["version_name"]
+        folder_path = request.form["folder_path"]
+        tc_amount = int(request.form.get("tc_amount", 1))
+        skip_checks = "skip_checks" in request.form
+        del_tc = "del_tc" in request.form
+        debug = "debug" in request.form
+
+        try:
+            res=main(req, username, baseurl, project_key, version_name, folder_path, tc_amount, skip_checks, del_tc, debug)
+            return redirect(url_for('resultat'))
+        except Exception as e:
+            result = f"❌ Une erreur est survenue : {e}"
+            return render_template("index.html", result=result)
+
+    return render_template("index.html", result=result)
+
 
 @main_bp.route('/api/jira-xray-settings', methods=['GET'])
 @login_required
@@ -253,9 +277,6 @@ def api_get_jira_xray_settings():
             "xray_client_secret": settings.get("xray_client_secret", ""),
         }
     })
-
-
-
 # Fetch Requirement Issue data
 def get_issue_data(issue_key, BASE_URL, USERNAME):
     with open(JIRA_TOKEN_FILE, 'r') as file:
