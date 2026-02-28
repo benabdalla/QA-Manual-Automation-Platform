@@ -8,6 +8,9 @@ from flask_app import db, login_manager
 from flask_app.models import User
 from datetime import datetime
 import re
+import os
+import smtplib
+from email.message import EmailMessage
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -150,6 +153,8 @@ def register():
         try:
             db.session.add(user)
             db.session.commit()
+            # Send welcome email after successful registration
+            send_welcome_email(user.email, user.username,password)
             flash('Account created successfully! Please login.', 'success')
             return redirect(url_for('auth.login'))
         except Exception as e:
@@ -196,6 +201,100 @@ def update_profile():
     
     return redirect(url_for('auth.profile'))
 
+
+def send_welcome_email(user_email, user_name,password):
+    """
+    Send a modern HTML welcome email to the new user.
+    Uses Gmail SMTP with TLS. Credentials loaded from environment variables.
+    Returns True if sent successfully, False otherwise.
+    """
+    SMTP_USER = "qaplateforme@gmail.com"
+    SMTP_PASS =  "gdls ftli crlb mtrc"
+    COMPANY_NAME =  "QA plateforme"
+    LOGO_URL =  "https://www.robot-magazine.fr/wp-content/uploads/2025/05/AI-Agents--780x470.webp"
+    LOGIN_URL =  "http://127.0.0.1:5001/auth/login"
+    CURRENT_YEAR = datetime.utcnow().year
+
+    if not SMTP_USER or not SMTP_PASS:
+        return False
+
+    subject = f"Welcome to {COMPANY_NAME}, {user_name}!"
+    html_content = f"""
+    <html>
+    <body style="margin:0;padding:0;background:#f4f6f8;">
+      <table width="100%" bgcolor="#f4f6f8" style="padding:30px 0;">
+        <tr>
+          <td align="center">
+            <table width="480" bgcolor="#ffffff" style="border-radius:8px;box-shadow:0 2px 8px #e0e0e0;">
+              <tr>
+                <td align="center" style="padding:32px 0 16px;">
+                  <img src="{LOGO_URL}" alt="Logo" style="width:120px;height:40px;">
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="padding:0 32px;">
+                  <h2 style="color:#222;font-family:sans-serif;margin-bottom:8px;">Welcome to {COMPANY_NAME}!</h2>
+                  <p style="color:#555;font-size:16px;font-family:sans-serif;margin:0;">
+                    Hi <b>{user_name}</b>,<br>
+                  </p>
+                </td>
+                       <td align="center" style="padding:0 32px;">
+                  <h2 style="color:#222;font-family:sans-serif;margin-bottom:8px;">Password </h2>
+                  <p style="color:#555;font-size:16px;font-family:sans-serif;margin:0;">
+                     <b>{password}</b>,<br>
+                    Your account has been created successfully.<br>
+                    We're excited to have you on board!
+                  </p>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="padding:24px 32px;">
+                  <a href="{LOGIN_URL}" style="display:inline-block;background:#007bff;color:#fff;font-family:sans-serif;font-size:16px;font-weight:600;padding:12px 32px;border-radius:6px;text-decoration:none;">
+                    Login to your account
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="padding:16px 32px 32px;">
+                  <p style="color:#aaa;font-size:13px;font-family:sans-serif;margin:0;">
+                    &copy; {CURRENT_YEAR} {COMPANY_NAME}. All rights reserved.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+    """
+
+    text_content = (
+        f"Welcome to {COMPANY_NAME}!\n\n"
+        f"Hi {user_name},\n"
+        "Your account has been created successfully.\n"
+        "We're excited to have you on board!\n\n"
+        f"Login to your account: {LOGIN_URL}\n\n"
+        f"{COMPANY_NAME} © {CURRENT_YEAR}"
+    )
+
+    msg = EmailMessage()
+    msg['Subject'] = subject
+    msg['From'] = SMTP_USER
+    msg['To'] = user_email
+    msg.set_content(text_content)
+    msg.add_alternative(html_content, subtype='html')
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(SMTP_USER, SMTP_PASS)
+            smtp.send_message(msg)
+        return True
+    except Exception as e:
+        # Optionally log e for debugging
+        return False
 
 def url_has_allowed_host_and_scheme(url):
     """Check if URL is safe to redirect to"""

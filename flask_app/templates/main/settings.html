@@ -289,7 +289,7 @@ document.getElementById('provider').addEventListener('change', function() {
     const provider = this.value;
     const modelSelect = document.getElementById('model');
     modelSelect.innerHTML = '<option value="">-- Select a Model --</option>';
-    
+
     if (provider && modelsByProvider[provider]) {
         modelsByProvider[provider].forEach(model => {
             const option = document.createElement('option');
@@ -331,7 +331,7 @@ document.getElementById('modelForm').addEventListener('submit', async function(e
         system_prompt: document.getElementById('systemPrompt').value,
         use_streaming: document.getElementById('streaming').checked
     };
-    
+
     try {
         const response = await fetch('/api/settings/model', {
             method: 'POST',
@@ -339,7 +339,7 @@ document.getElementById('modelForm').addEventListener('submit', async function(e
             body: JSON.stringify(data)
         });
         const result = await response.json();
-        
+
         if (result.success) {
             showToast('Model settings saved successfully!', 'success');
             displayCurrentConfig(data);
@@ -360,7 +360,7 @@ document.getElementById('apiKeyForm').addEventListener('submit', async function(
         key_type: document.getElementById('keyProvider').value,
         key_value: document.getElementById('keyValue').value
     };
-    
+
     try {
         const response = await fetch('/api/api-keys', {
             method: 'POST',
@@ -368,7 +368,7 @@ document.getElementById('apiKeyForm').addEventListener('submit', async function(
             body: JSON.stringify(data)
         });
         const result = await response.json();
-        
+
         if (result.success) {
             showToast('API key added successfully!', 'success');
             document.getElementById('apiKeyForm').reset();
@@ -387,11 +387,11 @@ async function loadApiKeys() {
     try {
         const response = await fetch('/api/api-keys');
         const data = await response.json();
-        
+
         if (data.success && data.keys) {
             const container = document.getElementById('keysList');
             container.innerHTML = '';
-            
+
             data.keys.forEach(key => {
                 const masked = key.key_value.substring(0, 8) + '...' + key.key_value.substring(key.key_value.length - 4);
                 const card = document.createElement('div');
@@ -443,7 +443,7 @@ async function saveKey(id) {
         key_value: document.getElementById('editKeyValue').value,
         is_active: document.getElementById('editKeyActive').checked
     };
-    
+
     try {
         const response = await fetch(`/api/api-keys/${id}`, {
             method: 'PUT',
@@ -451,7 +451,7 @@ async function saveKey(id) {
             body: JSON.stringify(data)
         });
         const result = await response.json();
-        
+
         if (result.success) {
             showToast('API key updated!', 'success');
             bootstrap.Modal.getInstance(document.getElementById('editKeyModal')).hide();
@@ -471,7 +471,7 @@ async function deleteKey(id) {
         try {
             const response = await fetch(`/api/api-keys/${id}`, {method: 'DELETE'});
             const result = await response.json();
-            
+
             if (result.success) {
                 showToast('API key deleted!', 'success');
                 loadApiKeys();
@@ -490,7 +490,7 @@ async function loadHistory() {
     try {
         const response = await fetch('/api/settings/history');
         const data = await response.json();
-        
+
         if (data.success && data.history && data.history.length > 0) {
             const tbody = document.getElementById('historyBody');
             tbody.innerHTML = data.history.map(entry => `

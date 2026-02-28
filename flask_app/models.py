@@ -2,6 +2,7 @@
 User Model for Flask Authentication
 """
 from flask_login import UserMixin
+from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from flask_app import db
@@ -139,6 +140,50 @@ class JiraXraySettings(db.Model):
                 'xray_client_secret': self.xray_client_secret,
             })
         return data
+
+    from sqlalchemy import text
+    @staticmethod
+    def get_user_jira_settings(user_id):
+        """
+        Fetch active Jira/Xray settings for a given user.
+        Returns a dict or None if not found.
+        """
+        try:
+            query = text("""
+                SELECT
+                    id,
+                    user_id,
+                    jira_requirement_key,
+                    jira_username,
+                    jira_url,
+                    jira_api_token,
+                    project_key,
+                    version_name,
+                    xray_folder_path,
+                    xray_client_id,
+                    xray_client_secret,
+                    num_test_cases,
+                    is_active,
+                    created_at,
+                    updated_at
+                FROM jira_xray_settings
+                WHERE user_id = :user_id
+                  AND is_active = TRUE
+                ORDER BY updated_at DESC
+                LIMIT 1
+            """)
+
+            result = db.session.execute(query, {"user_id": user_id})
+            row = result.fetchone()
+
+            if row is None:
+                return None
+
+            return dict(row._mapping)
+
+        except Exception as e:
+            db.session.rollback()
+            raise RuntimeError(f"Failed to fetch jira_xray_settings: {str(e)}")
 
 
 class AgentSettings(db.Model):

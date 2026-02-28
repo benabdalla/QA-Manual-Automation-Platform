@@ -1,9 +1,13 @@
 """
 Main Routes for Flask App
 """
+from datetime import datetime
+
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify, current_app
 from flask_login import login_required, current_user
+from sqlalchemy import text
 
+from flask_app import db
 from flask_app.app import app
 from flask_app.models import SavedConfig, JiraXraySettings
 import os
@@ -40,19 +44,19 @@ def home():
         'avatar': current_user.avatar,
         'created_at': current_user.created_at
     }
-    
+
     # Get user's saved configs count
     agent_configs_count = SavedConfig.query.filter_by(
-        user_id=current_user.id, 
+        user_id=current_user.id,
         config_type='agent'
     ).count()
-    
+
     browser_configs_count = SavedConfig.query.filter_by(
-        user_id=current_user.id, 
+        user_id=current_user.id,
         config_type='browser'
     ).count()
-    
-    return render_template('main/home.html', 
+
+    return render_template('main/home.html',
                           user=user_data,
                           agent_configs=agent_configs_count,
                           browser_configs=browser_configs_count)
@@ -117,6 +121,7 @@ def test_case_generator():
     """Test case generator page"""
     # Handle POST requests by redirecting to GET
     if request.method == 'POST':
+        index_generate()
         return redirect(url_for('main.test_case_generator'))
     return render_template('main/test_case_generator.html')
 
@@ -156,17 +161,17 @@ def generate_agent_gherkin():
         feature_name = request.form.get("feature_name")
         scenario_description = request.form.get("scenario_description")
         scenario_count = int(request.form.get("scenario_count", 1))
-        
+
         # Fetch agent configuration
         agent = SavedConfig.query.filter_by(
             id=agent_id,
             user_id=current_user.id,
             config_type='agent'
         ).first()
-        
+
         if not agent:
             return jsonify({"error": "Agent not found"}), 404
-        
+
         # Build prompt for gherkin generation
         system_prompt = (
             f"You are a BDD test scenario expert. Generate {scenario_count} Gherkin scenario(s) "
@@ -179,19 +184,19 @@ def generate_agent_gherkin():
             "    When [action]\n"
             "    Then [expected result]"
         )
-        
+
         full_prompt = system_prompt + "\n\nFeature Description:\n" + scenario_description
-        
+
         # Call generative AI to generate gherkin
         genai.configure(api_key=file.readline().strip())
         model = genai.GenerativeModel('gemini-2.0-flash')
-        
+
         try:
             response = model.generate_content(full_prompt)
             gherkin_result = response.text.strip()
         except Exception as e:
             return jsonify({"error": f"Failed to generate scenarios: {str(e)}"}), 500
-        
+
         return jsonify({
             "message": "Gherkin scenarios generated successfully!",
             "gherkin": gherkin_result,
@@ -220,6 +225,36 @@ JIRA_TOKEN_FILE = 'jira_token.txt'  # https://support.atlassian.com/atlassian-ac
 # Jira Cloud API endpoint for creating issues (test cases)
 XRAY_URL = "https://xray.cloud.getxray.app/api/v2/import/test/bulk"
 XRAY_AUTH_JSON = 'xray_auth.json'  # File containing your XRAY API token https://community.atlassian.com/t5/Jira-Software-questions/Where-to-create-Xray-api-key/qaq-p/1923024
+
+
+@main_bp.route('/api/jira-xray-settings', methods=['GET'])
+@login_required
+def api_get_jira_xray_settings():
+    """API endpoint to return current user's Jira/Xray settings as JSON"""
+    settings = JiraXraySettings.get_user_jira_settings(current_user.id)
+
+    if not settings:
+        return jsonify({
+            "success": False,
+            "message": "Aucun paramètre trouvé pour cet utilisateur."
+        }), 404
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "jira_requirement_key": settings.get("jira_requirement_key", ""),
+            "jira_username": settings.get("jira_username", ""),
+            "jira_url": settings.get("jira_url", ""),
+            "project_key": settings.get("project_key", ""),
+            "version_name": settings.get("version_name", ""),
+            "xray_folder_path": settings.get("xray_folder_path", ""),
+            "num_test_cases": settings.get("num_test_cases", 1),
+            "xray_client_id": settings.get("xray_client_id", ""),
+            "xray_client_secret": settings.get("xray_client_secret", ""),
+        }
+    })
+
+
 
 # Fetch Requirement Issue data
 def get_issue_data(issue_key, BASE_URL, USERNAME):
@@ -439,30 +474,82 @@ def resultat():
     return render_template('resultat.html', testcases=data)  # On injecte data dans le template
 
 # let testCases = JSON.parse('{{ result_json|safe }}');
-@main_bp.route("/", methods=["GET", "POST"])
-@login_required
-def index():
+# @main_bp.route("/", methods=["GET", "POST"])
+# @login_required
+# def index():
+#     JiraXraySettings.get_user_jira_settings(5)
+#     result = None
+#     if request.method == "POST":
+#         req = request.form["req"]
+#
+#
+#         try:
+#             username = request.form["username"]
+#             baseurl = request.form["baseurl"]
+#             project_key = request.form["project_key"]
+#             version_name = request.form["version_name"]
+#             folder_path = request.form["folder_path"]
+#             tc_amount = int(request.form.get("tc_amount", 1))
+#             skip_checks = "skip_checks" in request.form
+#             del_tc = "del_tc" in request.form
+#             debug = "debug" in request.form
+#             res=main(req, username, baseurl, project_key, version_name, folder_path, tc_amount, skip_checks, del_tc, debug)
+#             return redirect(url_for('resultat'))
+#         except Exception as e:
+#             result = f"❌ Une erreur est survenue : {e}"
+#             return render_template("index.html", result=result)
+#
+#     return render_template("index.html", result=result)
+
+def index_generate():
     result = None
+
+    # ✅ Get current logged-in user from Flask-Login session
+    user_id = current_user.id
+
+    # ✅ Load saved settings from DB for this user
+    settings = JiraXraySettings.get_user_jira_settings(user_id)
+
     if request.method == "POST":
-        req = request.form["req"]
-        username = request.form["username"]
-        baseurl = request.form["baseurl"]
-        project_key = request.form["project_key"]
-        version_name = request.form["version_name"]
-        folder_path = request.form["folder_path"]
-        tc_amount = int(request.form.get("tc_amount", 1))
-        skip_checks = "skip_checks" in request.form
-        del_tc = "del_tc" in request.form
-        debug = "debug" in request.form
+        input_source = request.form.get("input_source", "jira_key")
+
+        # ✅ Form value OR fallback to DB setting
+        username     =(settings.get("jira_username")     if settings else "")
+        baseurl      = (settings.get("jira_url")          if settings else "")
+        project_key  =(settings.get("project_key")       if settings else "")
+        version_name = (settings.get("version_name")      if settings else "")
+        folder_path  =(settings.get("xray_folder_path")  if settings else "")
+        tc_amount    = int(request.form.get("tc_amount") or (settings.get("num_test_cases", 1) if settings else 1))
+        skip_checks  = "skip_checks" in request.form
+        del_tc       = "del_tc"       in request.form
+        debug        = "debug"        in request.form
+
+        # ✅ Handle input source: Jira key vs User Story
+        if input_source == "user_story":
+            req        = None
+            user_story = request.form.get("user_story", "").strip()
+            if not user_story:
+                result = "❌ Veuillez saisir une user story."
+                return render_template("index.html", result=result, settings=settings)
+        else:
+            req        = request.form.get("req", "").strip() or (settings.get("jira_requirement_key") if settings else "")
+            user_story = None
+            if not req:
+                result = "❌ Veuillez saisir une clé de requirement."
+                return render_template("index.html", result=result, settings=settings)
 
         try:
-            res=main(req, username, baseurl, project_key, version_name, folder_path, tc_amount, skip_checks, del_tc, debug)
-            return redirect(url_for('resultat'))
+            main(
+                req, username, baseurl, project_key, version_name,
+                folder_path, tc_amount, skip_checks, del_tc, debug,
+                user_story=user_story
+            )
+            return redirect(url_for('main_bp.resultat'))
         except Exception as e:
             result = f"❌ Une erreur est survenue : {e}"
-            return render_template("index.html", result=result)
+            return render_template("index.html", result=result, settings=settings)
 
-    return render_template("index.html", result=result)
+    return render_template("index.html", result=result, settings=settings)
 
 
 @main_bp.route('/save_tests', methods=['POST'])
@@ -494,3 +581,198 @@ def import_xray():
         print(f"Erreur Xray: {e}")
         return redirect(url_for('resultat'))
 
+
+
+
+def _mask(val):
+    if not val or len(val) < 8:
+        return '••••••••'
+    return val[:6] + '•••••••' + val[-4:]
+
+
+# GET /api/api-keys
+@main_bp.route('/api/api-keys', methods=['GET'])
+@login_required
+def get_api_keys():
+    try:
+        result = db.session.execute(text("""
+            SELECT id, user_id, key_name, key_value, key_type, is_active, created_at, last_used
+            FROM api_keys WHERE user_id = :uid ORDER BY created_at DESC
+        """), {"uid": current_user.id})
+
+        keys = []
+        for row in result.fetchall():
+            d = dict(row._mapping)
+            d['key_value']  = _mask(d['key_value'])
+            d['created_at'] = d['created_at'].isoformat() if d['created_at'] else None
+            d['last_used']  = d['last_used'].isoformat()  if d['last_used']  else None
+            keys.append(d)
+
+        return jsonify({"success": True, "keys": keys}), 200
+    except Exception as e:
+        print(f"❌ GET api_keys error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# POST /api/api-keys
+@main_bp.route('/api/api-keys-xray', methods=['POST'])
+@login_required
+def create_api_key():
+    print("🔥 ROUTE HIT - create_api_key")
+
+    body = request.get_json(force=True, silent=True)
+    print(f"BODY: {body}")
+
+    if not body:
+        return jsonify({"success": False, "error": "Cannot parse request body"}), 400
+
+    key_name  = str(body.get('key_name')  or '').strip()
+    key_type  = str(body.get('key_type')  or '').strip()
+    key_value = str(body.get('key_value') or '').strip()
+    raw       = body.get('is_active', True)
+    is_active = raw if isinstance(raw, bool) else str(raw).lower() not in ('false', '0', 'no', '')
+
+    print(f"→ name='{key_name}' type='{key_type}' value='{key_value}' active={is_active}")
+
+    if not key_name:  return jsonify({"success": False, "error": "key_name is required"}), 400
+    if not key_type:  return jsonify({"success": False, "error": "key_type is required"}), 400
+    if not key_value: return jsonify({"success": False, "error": "key_value is required"}), 400
+
+    try:
+        result = db.session.execute(text("""
+            INSERT INTO api_keys (user_id, key_name, key_value, key_type, is_active, created_at)
+            VALUES (:user_id, :key_name, :key_value, :key_type, :is_active, :now)
+            RETURNING id
+        """), {
+            "user_id":  current_user.id,   # ✅ no space
+            "key_name":  key_name,
+            "key_value": key_value,
+            "key_type":  key_type,
+            "is_active": is_active,
+            "now":       datetime.utcnow()  # ✅ created_at provided
+        })
+        db.session.commit()
+        new_id = result.fetchone()[0]
+        print(f"✅ KEY CREATED id={new_id}")
+        return jsonify({"success": True, "message": "API key created", "id": new_id}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ DB ERROR: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# PUT /api/api-keys/<id>
+@main_bp.route('/api/api-keys/<int:key_id>', methods=['PUT'])
+@login_required
+def update_api_key(key_id):
+    try:
+        check = db.session.execute(
+            text("SELECT id FROM api_keys WHERE id = :id AND user_id = :uid"),
+            {"id": key_id, "uid": current_user.id}
+        ).fetchone()
+        if not check:
+            return jsonify({"success": False, "error": "Key not found or access denied"}), 404
+
+        body      = request.get_json()
+        key_name  = (body.get('key_name') or '').strip()
+        key_type  = (body.get('key_type') or '').strip()
+        is_active = bool(body.get('is_active', True))
+        new_value = (body.get('key_value') or '').strip()
+
+        if new_value:
+            db.session.execute(text("""
+                UPDATE api_keys SET key_name=:n, key_type=:t, key_value=:v, is_active=:a
+                WHERE id=:id AND user_id=:uid
+            """), {"n": key_name, "t": key_type, "v": new_value, "a": is_active,
+                   "id": key_id, "uid": current_user.id})
+        else:
+            db.session.execute(text("""
+                UPDATE api_keys SET key_name=:n, key_type=:t, is_active=:a
+                WHERE id=:id AND user_id=:uid
+            """), {"n": key_name, "t": key_type, "a": is_active,
+                   "id": key_id, "uid": current_user.id})
+
+        db.session.commit()
+        return jsonify({"success": True, "message": "Key updated"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# DELETE /api/api-keys/<id>
+@app.route('/api/api-keys/<int:key_id>', methods=['DELETE'])
+@login_required
+def delete_api_key(key_id):
+    try:
+        check = db.session.execute(
+            text("SELECT id FROM api_keys WHERE id = :id AND user_id = :uid"),
+            {"id": key_id, "uid": current_user.id}
+        ).fetchone()
+        if not check:
+            return jsonify({"success": False, "error": "Key not found or access denied"}), 404
+
+        db.session.execute(
+            text("DELETE FROM api_keys WHERE id = :id AND user_id = :uid"),
+            {"id": key_id, "uid": current_user.id}
+        )
+        db.session.commit()
+        return jsonify({"success": True, "message": "Key deleted"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# GET /api/api-keys/by-type/<type>  — internal use to retrieve actual key value
+@main_bp.route('/api/api-keys/by-type/<string:key_type>', methods=['GET'])
+@login_required
+def get_key_by_type(key_type):
+    try:
+        row = db.session.execute(text("""
+            SELECT id, key_name, key_value FROM api_keys
+            WHERE user_id=:uid AND key_type=:t AND is_active=TRUE
+            ORDER BY created_at DESC LIMIT 1
+        """), {"uid": current_user.id, "t": key_type}).fetchone()
+
+        if not row:
+            return jsonify({"success": False, "error": f"No active {key_type} key found"}), 404
+
+        db.session.execute(
+            text("UPDATE api_keys SET last_used=:now WHERE id=:id"),
+            {"now": datetime.utcnow(), "id": row.id}
+        )
+        db.session.commit()
+
+        return jsonify({"success": True, "id": row.id,
+                        "key_name": row.key_name,
+                        "key_value": row.key_value}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# GET /api/api-keys/history
+@main_bp.route('/api/api-keys/history', methods=['GET'])
+@login_required
+def get_keys_history():
+    try:
+        rows = db.session.execute(text("""
+            SELECT key_name, key_type, created_at, last_used
+            FROM api_keys WHERE user_id=:uid
+            ORDER BY COALESCE(last_used, created_at) DESC LIMIT 20
+        """), {"uid": current_user.id}).fetchall()
+
+        history = []
+        for row in rows:
+            d = dict(row._mapping)
+            if d['last_used']:
+                history.append({"timestamp": d['last_used'].isoformat(),
+                                 "action": "used", "key_name": d['key_name'],
+                                 "details": d['key_type']})
+            history.append({"timestamp": d['created_at'].isoformat(),
+                             "action": "created", "key_name": d['key_name'],
+                             "details": d['key_type']})
+
+        history.sort(key=lambda x: x['timestamp'], reverse=True)
+        return jsonify({"success": True, "history": history[:20]}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
