@@ -8,7 +8,3 @@ langchain-ibm==0.3.10
 langchain_mcp_adapters==0.0.9
 langgraph==0.3.34
 langchain-community
-
-# Authentication dependencies
-mysql-connector-python==8.3.0
-PyJWT==2.8.0

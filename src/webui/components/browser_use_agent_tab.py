@@ -1057,15 +1057,16 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
         "browser_use_agent", tab_components
     )  # Use "browser_use_agent" as tab_name prefix
 
-    all_managed_components = set(
+    all_managed_components = list(
         webui_manager.get_components()
     )  # Get all components known to manager
     run_tab_outputs = list(tab_components.values())
 
     async def submit_wrapper(
-            components_dict: Dict[Component, Any],
+            *args,
     ) -> AsyncGenerator[Dict[Component, Any], None]:
         """Wrapper for handle_submit that yields its results."""
+        components_dict = dict(zip(all_managed_components, args))
         async for update in handle_submit(webui_manager, components_dict):
             yield update
 

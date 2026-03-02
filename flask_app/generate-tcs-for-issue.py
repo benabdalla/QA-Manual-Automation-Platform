@@ -279,7 +279,7 @@ def resultat():
 
     # ⚠️ Choisis soit JSON, soit HTML, mais pas les deux en même temps.
     # return jsonify(data)
-    return render_template('resultat.html', testcases=data)  # On injecte data dans le template
+    return render_template('main/resultat.html', testcases=data)  # On injecte data dans le template
 
 # let testCases = JSON.parse('{{ result_json|safe }}');
 @app.route("/", methods=["GET", "POST"])
@@ -302,9 +302,9 @@ def index():
             return redirect(url_for('resultat'))
         except Exception as e:
             result = f"❌ Une erreur est survenue : {e}"
-            return render_template("index.html", result=result)
+            return render_template("main/index.html", result=result)
 
-    return render_template("index.html", result=result)
+    return render_template("main/index.html", result=result)
 
 
 @app.route('/save_tests', methods=['POST'])
@@ -329,7 +329,7 @@ def import_xray():
         # Simule une importation
         import_test_cases_to_xray()
         print("import_test_cases_to_xray called")
-        return render_template("index.html", result="data insert.")
+        return render_template("main/index.html", result="data insert.")
     except Exception as e:
         print(f"Erreur Xray: {e}")
         return redirect(url_for('resultat'))

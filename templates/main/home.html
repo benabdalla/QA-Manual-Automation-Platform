@@ -165,6 +165,34 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Card 4: Agent-Based Gherkin Generator -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="feature-card card-4">
+                        <div class="card-top-bar"></div>
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-robot"></i> Agent Gherkin Generator
+                            </h5>
+                            <p class="card-description">
+                                Generate Gherkin scenarios using AI agents.
+                                Select an agent from your database, configure LLM settings, 
+                                and create BDD test scenarios automatically.
+                            </p>
+                            <div class="card-stats">
+                                <span class="stat">
+                                    <i class="fas fa-cube"></i> Agent-Powered
+                                </span>
+                                <span class="stat">
+                                    <i class="fas fa-leaf"></i> Gherkin/BDD
+                                </span>
+                            </div>
+                            <a href="{{ url_for('main.agent_gherkin_generator') }}" class="btn btn-primary btn-block mt-3">
+                                <i class="fas fa-flask"></i> Generate Scenarios
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -191,6 +219,21 @@
                         <li><a href="{{ url_for('auth.profile') }}"><i class="fas fa-arrow-right"></i> Profile Settings</a></li>
                         <li><a href="{{ url_for('main.jira_xray_settings') }}"><i class="fas fa-arrow-right"></i> Jira-Xray Settings</a></li>
                     </ul>
+                    <hr>
+                    <div>
+                        <h6 class="mb-2"><i class="fas fa-robot"></i> Agent Generator LLM Models</h6>
+                        <ul id="llm-model-list" class="mb-2" style="padding-left: 1.2em;">
+                            <!-- Will be populated by JS -->
+                        </ul>
+                        <div class="mb-2">
+                            <span class="text-muted" style="font-size: 0.95em;">
+                                <i class="fas fa-key"></i> To use the agent generator, you must create and save an API key for your selected LLM provider.
+                            </span>
+                        </div>
+                        <a href="{{ url_for('main.model_settings') }}" class="btn btn-outline-secondary btn-sm mt-2">
+                            <i class="fas fa-plus"></i> Add API Key / Manage Models
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -305,6 +348,10 @@
         background: linear-gradient(90deg, #ec4899, #f472b6);
     }
     
+    .card-4 .card-top-bar {
+        background: linear-gradient(90deg, #10b981, #34d399);
+    }
+    
     .card-body {
         padding: 25px;
     }
@@ -380,50 +427,30 @@
 </style>
 {% endblock %}
 
-@main.route('/agent-gherkin-generator', methods=['GET'])
-@login_required
-def agent_gherkin_generator():
-    """Display agent-based Gherkin generator interface"""
-    from flask_app.models import Agent  # Adjust import based on your model location
-    agents = Agent.query.filter_by(user_id=current_user.id).all()
-    return render_template('main/agent_gherkin_generator.html', agents=agents)
-
-@main.route('/generate-agent-gherkin', methods=['POST'])
-@login_required
-def generate_agent_gherkin():
-    """Generate Gherkin scenarios using selected agent"""
-    import json
-    from flask_app.models import Agent
-    
-    agent_id = request.form.get('agent_id')
-    feature_name = request.form.get('feature_name')
-    scenario_description = request.form.get('scenario_description')
-    scenario_count = request.form.get('scenario_count', 1)
-    
-    agent = Agent.query.filter_by(id=agent_id, user_id=current_user.id).first()
-    
-    if not agent:
-        return jsonify({'error': 'Agent not found'}), 404
-    
-    try:
-        # Call your LLM/Agent service to generate Gherkin scenarios
-        gherkin_scenarios = generate_gherkin_with_agent(
-            agent=agent,
-            feature_name=feature_name,
-            description=scenario_description,
-            count=int(scenario_count)
-        )
-        
-        return jsonify({
-            'success': True,
-            'scenarios': gherkin_scenarios
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch agent generator LLM models from API and populate the list
+    fetch('/api/code-generator/agent-settings')
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById('llm-model-list');
+            if (!list) return;
+            list.innerHTML = '';
+            if (data.success && data.agent_settings && data.agent_settings.length > 0) {
+                data.agent_settings.forEach(setting => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<b>${setting.llm_provider}</b>: <span class="text-muted">${setting.llm_model_name}</span>`;
+                    list.appendChild(li);
+                });
+            } else {
+                list.innerHTML = '<li class="text-muted">No LLM models configured yet.</li>';
+            }
         })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-def generate_gherkin_with_agent(agent, feature_name, description, count):
-    """Helper function to generate Gherkin using agent"""
-    # Implement your LLM call here with agent's model and API
-    # This should use agent.llm_model and agent.api_key
-    # Return generated Gherkin scenarios
-    pass
+        .catch(() => {
+            const list = document.getElementById('llm-model-list');
+            if (list) list.innerHTML = '<li class="text-muted">Unable to load LLM models.</li>';
+        });
+});
+</script>
+{% endblock %}

@@ -36,9 +36,15 @@ def create_load_save_config_tab(webui_manager: WebuiManager):
 
     webui_manager.add_components("load_save_config", tab_components)
 
+    all_components = webui_manager.get_components()
+
+    def save_config_wrapper(*args):
+        components_dict = dict(zip(all_components, args))
+        return webui_manager.save_config(components_dict)
+
     save_config_button.click(
-        fn=webui_manager.save_config,
-        inputs=set(webui_manager.get_components()),
+        fn=save_config_wrapper,
+        inputs=all_components,
         outputs=[config_status]
     )
 

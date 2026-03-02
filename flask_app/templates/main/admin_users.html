@@ -1,0 +1,703 @@
+{% extends "base.html" %}
+{% block title %}User Management - Ines QA Platform{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="container-fluid px-4 py-4">
+
+        <!-- Header -->
+        <div class="admin-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="admin-title">
+                        <i class="fas fa-users-cog"></i> User Management
+                    </h1>
+                    <p class="admin-subtitle text-muted mb-0">Manage platform users, roles and account status</p>
+                </div>
+                <button class="btn btn-add" onclick="openAddModal()">
+                    <i class="fas fa-user-plus"></i> Add User
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="row mb-4 g-3">
+            <div class="col-sm-3">
+                <div class="mini-stat">
+                    <span class="mini-icon bg-primary-soft"><i class="fas fa-users"></i></span>
+                    <div>
+                        <div class="mini-label">Total Users</div>
+                        <div class="mini-value" id="stat-total">—</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="mini-stat">
+                    <span class="mini-icon bg-success-soft"><i class="fas fa-check-circle"></i></span>
+                    <div>
+                        <div class="mini-label">Active</div>
+                        <div class="mini-value" id="stat-active">—</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="mini-stat">
+                    <span class="mini-icon bg-danger-soft"><i class="fas fa-ban"></i></span>
+                    <div>
+                        <div class="mini-label">Inactive</div>
+                        <div class="mini-value" id="stat-inactive">—</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="mini-stat">
+                    <span class="mini-icon bg-warning-soft"><i class="fas fa-shield-alt"></i></span>
+                    <div>
+                        <div class="mini-label">Admins</div>
+                        <div class="mini-value" id="stat-admins">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Filter -->
+        <div class="table-toolbar mb-3 d-flex gap-2 flex-wrap align-items-center">
+            <div class="search-wrap">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="searchInput" class="form-control search-input"
+                       placeholder="Search by name, email or username…" oninput="filterTable()">
+            </div>
+            <select class="form-select filter-select" id="filterStatus" onchange="filterTable()">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+            <select class="form-select filter-select" id="filterRole" onchange="filterTable()">
+                <option value="">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+            </select>
+            <button class="btn btn-outline-secondary btn-sm" onclick="loadUsers()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+        <!-- Users Table -->
+        <div class="table-card">
+            <div class="table-responsive">
+                <table class="table admin-table mb-0" id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Last Activity</th>
+                            <th>Created</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr><td colspan="7" class="text-center py-4 text-muted">
+                            <div class="spinner-border spinner-border-sm me-2"></div> Loading users…
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════ ADD / EDIT MODAL ═══════════════════ -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-styled">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">
+                    <i class="fas fa-user-plus"></i> Add New User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editUserId">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Username <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="fUsername" placeholder="johndoe" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="fEmail" placeholder="john@example.com" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="fFirstName" placeholder="John">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="fLastName" placeholder="Doe">
+                    </div>
+                    <div class="col-md-6" id="passwordField">
+                        <label class="form-label">Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="fPassword" placeholder="Min. 8 characters">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="togglePwd('fPassword', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6" id="passwordEditNote" style="display:none;">
+                        <label class="form-label">New Password <small class="text-muted">(leave blank to keep)</small></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="fPasswordEdit" placeholder="Leave blank to keep current">
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="togglePwd('fPasswordEdit', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Avatar / Emoji</label>
+                        <input type="text" class="form-control" id="fAvatar" placeholder="👤" maxlength="10">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Role</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="fIsAdmin">
+                            <label class="form-check-label" for="fIsAdmin">Admin</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" id="fIsActive" checked>
+                            <label class="form-check-label" for="fIsActive">Active</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-add" id="saveBtn" onclick="saveUser()">
+                    <i class="fas fa-save"></i> Save User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════ DELETE CONFIRM MODAL ═══════════════════ -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-styled">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-exclamation-triangle"></i> Delete User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="delete-icon mb-3"><i class="fas fa-user-times fa-3x text-danger"></i></div>
+                <h5>Are you sure?</h5>
+                <p class="text-muted mb-0">
+                    You are about to permanently delete
+                    <strong id="deleteUserName"></strong>.
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()">
+                    <i class="fas fa-trash"></i> Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+    <div id="liveToast" class="toast align-items-center border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMsg">Message here</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_css %}
+<style>
+/* ── Layout ── */
+.admin-container { background: #f0f2f8; min-height: 100vh; }
+
+.admin-header {
+    background: white;
+    padding: 24px 28px;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    border-left: 4px solid #667eea;
+}
+.admin-title  { font-size: 1.7rem; font-weight: 700; color: #1a202c; margin: 0; }
+.admin-subtitle { font-size: .9rem; }
+
+/* ── Stat cards ── */
+.mini-stat {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.mini-icon {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+}
+.bg-primary-soft { background:#eef0ff; color:#667eea; }
+.bg-success-soft { background:#e8faf0; color:#22c55e; }
+.bg-danger-soft  { background:#fff0f0; color:#ef4444; }
+.bg-warning-soft { background:#fffbeb; color:#f59e0b; }
+.mini-label { font-size:.75rem; color:#888; text-transform:uppercase; }
+.mini-value { font-size:1.4rem; font-weight:700; color:#1a202c; }
+
+/* ── Toolbar ── */
+.search-wrap { position:relative; flex:1; min-width:220px; }
+.search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#aaa; }
+.search-input { padding-left:36px; border-radius:8px; }
+.filter-select { width:auto; border-radius:8px; }
+
+/* ── Table card ── */
+.table-card {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.07);
+    overflow: hidden;
+}
+.admin-table thead th {
+    background: #f7f8fc;
+    color: #555;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    border-bottom: 2px solid #eee;
+    padding: 14px 16px;
+    font-weight: 600;
+}
+.admin-table tbody td {
+    padding: 14px 16px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f2f2f2;
+    font-size: .9rem;
+}
+.admin-table tbody tr:hover { background: #fafbff; }
+.admin-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── User cell ── */
+.user-cell { display:flex; align-items:center; gap:12px; }
+.user-avatar {
+    width:38px; height:38px;
+    border-radius:50%;
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.1rem; flex-shrink:0;
+}
+.user-name  { font-weight:600; color:#1a202c; line-height:1.2; }
+.user-uname { font-size:.78rem; color:#999; }
+
+/* ── Badges ── */
+.badge-role-admin { background:#eef0ff; color:#667eea; font-size:.75rem; padding:4px 10px; border-radius:20px; font-weight:600; }
+.badge-role-user  { background:#f3f4f6; color:#6b7280; font-size:.75rem; padding:4px 10px; border-radius:20px; font-weight:600; }
+
+/* ── Toggle switch (status) ── */
+.status-toggle { display:flex; align-items:center; gap:8px; }
+.toggle-switch {
+    position:relative; width:40px; height:22px;
+    cursor:pointer;
+}
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider {
+    position:absolute; inset:0;
+    background:#ddd; border-radius:22px;
+    transition:.3s;
+}
+.toggle-slider:before {
+    content:'';
+    position:absolute;
+    width:16px; height:16px;
+    left:3px; top:3px;
+    background:white; border-radius:50%;
+    transition:.3s;
+}
+.toggle-switch input:checked + .toggle-slider { background:#22c55e; }
+.toggle-switch input:checked + .toggle-slider:before { transform:translateX(18px); }
+.status-label { font-size:.82rem; font-weight:600; }
+
+/* ── Action buttons ── */
+.btn-action {
+    width:32px; height:32px;
+    border-radius:8px;
+    border:none;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:.85rem;
+    cursor:pointer;
+    transition:.2s;
+}
+.btn-edit   { background:#eef0ff; color:#667eea; }
+.btn-delete { background:#fff0f0; color:#ef4444; }
+.btn-edit:hover   { background:#667eea; color:white; }
+.btn-delete:hover { background:#ef4444; color:white; }
+
+/* ── Add button ── */
+.btn-add {
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    color: white; border:none;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: .2s;
+}
+.btn-add:hover { opacity:.9; color:white; transform:translateY(-1px); }
+
+/* ── Modal ── */
+.modal-styled { border-radius:16px; overflow:hidden; border:none; }
+.modal-styled .modal-header {
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    border:none; padding:20px 24px;
+}
+.modal-styled .modal-title { color:white; font-weight:700; }
+.modal-styled .modal-body  { padding:24px; }
+.modal-styled .modal-footer{ border-top:1px solid #f0f0f0; padding:16px 24px; }
+.modal-styled .form-label  { font-weight:600; font-size:.88rem; color:#555; }
+.modal-styled .form-control,.modal-styled .form-select {
+    border-radius:8px; border:1.5px solid #e5e7eb;
+    padding:9px 12px; font-size:.9rem;
+}
+.modal-styled .form-control:focus { border-color:#667eea; box-shadow:0 0 0 3px rgba(102,126,234,.15); }
+
+/* ── Toast ── */
+.toast { border-radius:10px; min-width:260px; }
+.toast.bg-success { background:#22c55e !important; }
+.toast.bg-danger  { background:#ef4444 !important; }
+
+/* ── Date ── */
+.date-text { font-size:.82rem; color:#888; }
+</style>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+/* ════════════════════════════════════════════════════════
+   State
+════════════════════════════════════════════════════════ */
+let allUsers    = [];
+let deleteTarget = null;
+const userModal  = new bootstrap.Modal(document.getElementById('userModal'));
+const deleteModal= new bootstrap.Modal(document.getElementById('deleteModal'));
+
+/* ════════════════════════════════════════════════════════
+   LOAD users
+════════════════════════════════════════════════════════ */
+async function loadUsers() {
+    try {
+        const res  = await fetch('/api/admin/users');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+        allUsers = data.users;
+        renderTable(allUsers);
+        updateStats(allUsers);
+    } catch(e) {
+        document.getElementById('usersTableBody').innerHTML =
+            `<tr><td colspan="7" class="text-center text-danger py-4">
+                <i class="fas fa-exclamation-circle"></i> Failed to load users: ${e.message}
+            </td></tr>`;
+    }
+}
+
+/* ════════════════════════════════════════════════════════
+   RENDER table
+════════════════════════════════════════════════════════ */
+function renderTable(users) {
+    const tbody = document.getElementById('usersTableBody');
+    if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No users found.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = users.map(u => `
+        <tr id="row-${u.id}">
+            <td>
+                <div class="user-cell">
+                    <div class="user-avatar">${u.avatar || '👤'}</div>
+                    <div>
+                        <div class="user-name">${esc(u.first_name || '')} ${esc(u.last_name || '')}</div>
+                        <div class="user-uname">@${esc(u.username)}</div>
+                    </div>
+                </div>
+            </td>
+            <td>${esc(u.email)}</td>
+            <td>
+                ${u.is_admin
+                    ? '<span class="badge-role-admin"><i class="fas fa-shield-alt me-1"></i>Admin</span>'
+                    : '<span class="badge-role-user"><i class="fas fa-user me-1"></i>User</span>'}
+            </td>
+            <td>
+                <div class="status-toggle">
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${u.is_active ? 'checked' : ''}
+                               onchange="toggleStatus(${u.id}, this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="status-label ${u.is_active ? 'text-success' : 'text-danger'}">
+                        ${u.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
+            </td>
+            <td class="date-text">${fmtDate(u.last_activity)}</td>
+            <td class="date-text">${fmtDate(u.created_at)}</td>
+            <td class="text-center">
+                <button class="btn-action btn-edit me-1" title="Edit" onclick="openEditModal(${u.id})">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button class="btn-action btn-delete" title="Delete" onclick="openDeleteModal(${u.id}, '${esc(u.username)}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+/* ════════════════════════════════════════════════════════
+   STATS
+════════════════════════════════════════════════════════ */
+function updateStats(users) {
+    document.getElementById('stat-total').textContent   = users.length;
+    document.getElementById('stat-active').textContent  = users.filter(u => u.is_active).length;
+    document.getElementById('stat-inactive').textContent= users.filter(u => !u.is_active).length;
+    document.getElementById('stat-admins').textContent  = users.filter(u => u.is_admin).length;
+}
+
+/* ════════════════════════════════════════════════════════
+   FILTER / SEARCH
+════════════════════════════════════════════════════════ */
+function filterTable() {
+    const q      = document.getElementById('searchInput').value.toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+    const role   = document.getElementById('filterRole').value;
+
+    const filtered = allUsers.filter(u => {
+        const matchQ = !q ||
+            (u.username  || '').toLowerCase().includes(q) ||
+            (u.email     || '').toLowerCase().includes(q) ||
+            (u.first_name|| '').toLowerCase().includes(q) ||
+            (u.last_name || '').toLowerCase().includes(q);
+
+        const matchStatus = !status ||
+            (status === 'active'   &&  u.is_active) ||
+            (status === 'inactive' && !u.is_active);
+
+        const matchRole = !role ||
+            (role === 'admin' &&  u.is_admin) ||
+            (role === 'user'  && !u.is_admin);
+
+        return matchQ && matchStatus && matchRole;
+    });
+
+    renderTable(filtered);
+}
+
+/* ════════════════════════════════════════════════════════
+   TOGGLE STATUS (activate / deactivate)
+════════════════════════════════════════════════════════ */
+async function toggleStatus(userId, isActive) {
+    try {
+        const res  = await fetch(`/api/admin/users/${userId}/toggle-status`, {
+            method:  'POST',
+            headers: {'Content-Type': 'application/json'},
+            body:    JSON.stringify({ is_active: isActive })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        // Update local state
+        const u = allUsers.find(u => u.id === userId);
+        if (u) u.is_active = isActive;
+
+        // Update status label in row
+        const row   = document.getElementById(`row-${userId}`);
+        const label = row.querySelector('.status-label');
+        label.className = `status-label ${isActive ? 'text-success' : 'text-danger'}`;
+        label.textContent = isActive ? 'Active' : 'Inactive';
+
+        updateStats(allUsers);
+        showToast(isActive ? '✅ Account activated' : '🚫 Account deactivated', isActive ? 'success' : 'danger');
+    } catch(e) {
+        showToast('❌ Failed: ' + e.message, 'danger');
+        loadUsers(); // revert toggle
+    }
+}
+
+/* ════════════════════════════════════════════════════════
+   ADD USER modal
+════════════════════════════════════════════════════════ */
+function openAddModal() {
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-plus"></i> Add New User';
+    document.getElementById('editUserId').value = '';
+    document.getElementById('fUsername').value  = '';
+    document.getElementById('fEmail').value     = '';
+    document.getElementById('fFirstName').value = '';
+    document.getElementById('fLastName').value  = '';
+    document.getElementById('fAvatar').value    = '👤';
+    document.getElementById('fPassword').value  = '';
+    document.getElementById('fIsAdmin').checked = false;
+    document.getElementById('fIsActive').checked= true;
+    document.getElementById('passwordField').style.display     = '';
+    document.getElementById('passwordEditNote').style.display  = 'none';
+    document.getElementById('fUsername').readOnly = false;
+    userModal.show();
+}
+
+/* ════════════════════════════════════════════════════════
+   EDIT USER modal
+════════════════════════════════════════════════════════ */
+function openEditModal(userId) {
+    const u = allUsers.find(u => u.id === userId);
+    if (!u) return;
+
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit"></i> Edit User';
+    document.getElementById('editUserId').value  = u.id;
+    document.getElementById('fUsername').value   = u.username;
+    document.getElementById('fEmail').value      = u.email;
+    document.getElementById('fFirstName').value  = u.first_name || '';
+    document.getElementById('fLastName').value   = u.last_name  || '';
+    document.getElementById('fAvatar').value     = u.avatar     || '👤';
+    document.getElementById('fIsAdmin').checked  = u.is_admin;
+    document.getElementById('fIsActive').checked = u.is_active;
+    document.getElementById('fPasswordEdit').value= '';
+    document.getElementById('passwordField').style.display    = 'none';
+    document.getElementById('passwordEditNote').style.display = '';
+    document.getElementById('fUsername').readOnly = true;
+    userModal.show();
+}
+
+/* ════════════════════════════════════════════════════════
+   SAVE (create or update)
+════════════════════════════════════════════════════════ */
+async function saveUser() {
+    const userId    = document.getElementById('editUserId').value;
+    const isEdit    = !!userId;
+    const password  = isEdit
+        ? document.getElementById('fPasswordEdit').value.trim()
+        : document.getElementById('fPassword').value.trim();
+
+    if (!isEdit && !password) { showToast('❌ Password is required', 'danger'); return; }
+
+    const payload = {
+        username:   document.getElementById('fUsername').value.trim(),
+        email:      document.getElementById('fEmail').value.trim(),
+        first_name: document.getElementById('fFirstName').value.trim(),
+        last_name:  document.getElementById('fLastName').value.trim(),
+        avatar:     document.getElementById('fAvatar').value.trim() || '👤',
+        is_admin:   document.getElementById('fIsAdmin').checked,
+        is_active:  document.getElementById('fIsActive').checked,
+    };
+    if (password) payload.password = password;
+
+    if (!payload.username || !payload.email) {
+        showToast('❌ Username and email are required', 'danger'); return;
+    }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving…';
+
+    try {
+        const url    = isEdit ? `/api/admin/users/${userId}` : '/api/admin/users';
+        const method = isEdit ? 'PUT' : 'POST';
+        const res    = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body:    JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        userModal.hide();
+        showToast(isEdit ? '✅ User updated' : '✅ User created', 'success');
+        loadUsers();
+    } catch(e) {
+        showToast('❌ ' + e.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Save User';
+    }
+}
+
+/* ════════════════════════════════════════════════════════
+   DELETE
+════════════════════════════════════════════════════════ */
+function openDeleteModal(userId, username) {
+    deleteTarget = userId;
+    document.getElementById('deleteUserName').textContent = username;
+    deleteModal.show();
+}
+
+async function confirmDelete() {
+    if (!deleteTarget) return;
+    const btn = document.getElementById('confirmDeleteBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Deleting…';
+
+    try {
+        const res  = await fetch(`/api/admin/users/${deleteTarget}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        deleteModal.hide();
+        showToast('✅ User deleted', 'success');
+        deleteTarget = null;
+        loadUsers();
+    } catch(e) {
+        showToast('❌ ' + e.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash"></i> Delete User';
+    }
+}
+
+/* ════════════════════════════════════════════════════════
+   Utilities
+════════════════════════════════════════════════════════ */
+function showToast(msg, type='success') {
+    const toast = document.getElementById('liveToast');
+    toast.className = `toast align-items-center text-white border-0 bg-${type}`;
+    document.getElementById('toastMsg').textContent = msg;
+    new bootstrap.Toast(toast, { delay: 3500 }).show();
+}
+
+function fmtDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function togglePwd(id, btn) {
+    const inp = document.getElementById(id);
+    const showing = inp.type === 'text';
+    inp.type = showing ? 'password' : 'text';
+    btn.innerHTML = showing ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+}
+
+document.addEventListener('DOMContentLoaded', loadUsers);
+</script>
+{% endblock %}

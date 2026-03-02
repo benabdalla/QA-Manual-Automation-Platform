@@ -432,10 +432,11 @@ def create_deep_research_agent_tab(webui_manager: WebuiManager):
     )
 
     dr_tab_outputs = list(tab_components.values())
-    all_managed_inputs = set(webui_manager.get_components())
+    all_managed_inputs = list(webui_manager.get_components())
 
     # --- Define Event Handler Wrappers ---
-    async def start_wrapper(comps: Dict[Component, Any]) -> AsyncGenerator[Dict[Component, Any], None]:
+    async def start_wrapper(*args) -> AsyncGenerator[Dict[Component, Any], None]:
+        comps = dict(zip(all_managed_inputs, args))
         async for update in run_deep_research(webui_manager, comps):
             yield update
 

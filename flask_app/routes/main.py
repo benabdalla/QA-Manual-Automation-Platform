@@ -1,17 +1,33 @@
 """
 Main Routes for Flask App
 """
-from flask import Blueprint, render_template, redirect, session, url_for, request, jsonify, current_app
-from flask_login import login_required, current_user
-from flask_app.models import AgentSettings, JiraXraySettings
-from flask_app import db
-from datetime import datetime
+import re
+from functools import wraps
+
+from flask import Blueprint, render_template, redirect, session, url_for, request, jsonify, current_app, abort
+from flask_app.models import AgentSettings, JiraXraySettings, APIKey, User
+
+import google.generativeai as genai
 import os
-import json
+import sys
+
+from flask_app.routes.auth import send_welcome_email
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from datetime import datetime
+
+from flask import Blueprint, render_template, redirect, url_for, request, jsonify, current_app
+from flask_login import login_required, current_user
+from sqlalchemy import text
+
+from flask_app import db
+from flask_app.models import SavedConfig, JiraXraySettings
+import os
+
 import requests
 from requests.auth import HTTPBasicAuth
-import google.generativeai as genai
-
+import json
+from flask import Flask, render_template, request, redirect, url_for, app, jsonify
 
 main_bp = Blueprint('main', __name__)
 
@@ -183,8 +199,9 @@ def generate_agent_gherkin():
         full_prompt = system_prompt + "\n\nFeature Description:\n" + scenario_description
         
         # Call generative AI to generate gherkin
-        genai.configure(api_key=file.readline().strip())
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        result = APIKey.get_active_keys(user_id=current_user.id)
+        genai.configure(api_key=result[0]["key_value"])
+        model = genai.GenerativeModel(result[0]["key_type"])
         
         try:
             response = model.generate_content(full_prompt)
@@ -229,16 +246,12 @@ def resultat():
 
 
 # Configuration for test case generation
-OPENAI_TOKEN_FILE = 'openai_token.txt'
-JIRA_TOKEN_FILE = 'jira_token.txt'
 XRAY_URL = "https://xray.cloud.getxray.app/api/v2/import/test/bulk"
-XRAY_AUTH_JSON = 'xray_auth.json'
 
 
-def get_issue_data(issue_key, BASE_URL, USERNAME):
+
+def get_issue_data(issue_key, BASE_URL, USERNAME,jira_api_token):
     """Fetch Requirement Issue data from Jira"""
-    with open(JIRA_TOKEN_FILE, 'r') as file:
-        JIRA_TOKEN = file.readline().strip()
     url = f"{BASE_URL}/issue/{issue_key}"
 
     headers = {
@@ -248,7 +261,7 @@ def get_issue_data(issue_key, BASE_URL, USERNAME):
     response = requests.get(
         url,
         headers=headers,
-        auth=HTTPBasicAuth(USERNAME, JIRA_TOKEN)
+        auth=HTTPBasicAuth(USERNAME,jira_api_token)
     )
 
     if response.status_code == 200:
@@ -259,10 +272,8 @@ def get_issue_data(issue_key, BASE_URL, USERNAME):
         return None
 
 
-def delete_test_case(issue_key, BASE_URL, USERNAME):
+def delete_test_case(issue_key, BASE_URL, USERNAME,jira_api_token):
     """Delete Test Case from Jira"""
-    with open(JIRA_TOKEN_FILE, 'r') as file:
-        JIRA_TOKEN = file.readline().strip()
     url = f"{BASE_URL}/issue/{issue_key}"
 
     headers = {
@@ -272,7 +283,7 @@ def delete_test_case(issue_key, BASE_URL, USERNAME):
     response = requests.delete(
         url,
         headers=headers,
-        auth=HTTPBasicAuth(USERNAME, JIRA_TOKEN)
+        auth=HTTPBasicAuth(USERNAME, jira_api_token)
     )
 
     if response.status_code == 204:
@@ -284,90 +295,126 @@ def delete_test_case(issue_key, BASE_URL, USERNAME):
 
 
 def clean_api_response(raw_text):
-    """Clean API response by removing first and last lines"""
-    lines = raw_text.strip().splitlines()
-    cleaned_lines = lines[1:-1]
-    return "\n".join(cleaned_lines)
+    """
+    Extract valid JSON array from LLM response safely.
+    Handles:
+    - Extra text before/after JSON
+    - Markdown ```json blocks
+    - Trailing commas
+    """
+
+    if not raw_text:
+        return None
+
+    # Remove markdown blocks if present
+    raw_text = re.sub(r"```json", "", raw_text, flags=re.IGNORECASE)
+    raw_text = re.sub(r"```", "", raw_text)
+
+    # Extract first JSON array
+    match = re.search(r"\[.*\]", raw_text, re.DOTALL)
+    if not match:
+        return None
+
+    json_text = match.group(0)
+
+    # Remove trailing commas (common LLM mistake)
+    json_text = re.sub(r",\s*}", "}", json_text)
+    json_text = re.sub(r",\s*]", "]", json_text)
+
+    # Remove BOM if exists
+    json_text = json_text.encode().decode("utf-8-sig")
+
+    return json_text.strip()
 
 
-def generate_with_openai(prompt, project_key, version_name, folder_path, tc_amount, skip_checks=False, debug=True, app=None):
-    """Generate test cases using Google Generative AI"""
-    with open(OPENAI_TOKEN_FILE, 'r') as file:
-        genai.configure(api_key=file.readline().strip())
-    
-    model = genai.GenerativeModel('gemini-2.0-flash')
-    system_prompt = (
-        f"Générer cas de test pour la spécification des exigences fournie, en français. "
-        "La réponse doit être uniquement au format JSON valide, sans texte supplémentaire ni markdown.\n\n"
-        "Format JSON à utiliser :\n"
-        '[\n'
-        '    {\n'
-        '        "testtype": "Manual",\n'
-        '        "fields": {\n'
-        f'            "project": {{ "key": "{project_key}" }},\n'
-        f'            "fixVersions": [{{ "name": "{version_name}" }}],\n'
-        '            "summary": "Cas de test 1 : Test de vitesse minimale",\n'
-        '            "description": "Objectif : Vérifier que...\\nPréconditions : ..."\n'
-        '        },\n'
-        '        "steps": [\n'
-        '            {\n'
-        '                "action": "Démarrer une récupération de données vers ...",\n'
-        '                "data": "",\n'
-        '                "result": "L\'opération de récupération de données doit être terminée..."\n'
-        '            }\n'
-        '        ],'
-        f'        "xray_test_repository_folder": "{folder_path}"\n'
-        '    }\n'
-        ']'
-    )
-    
-    full_prompt = system_prompt + "\n\nSpécification des exigences :\n" + prompt
-    
+def generate_with_openai(prompt, project_key, version_name, folder_path,
+                         tc_amount, skip_checks=False, debug=True, app=None):
+
+    # 🔐 Get API key
+    result = APIKey.get_active_keys(user_id=current_user.id)
+
+    if not result:
+        print("❌ No active API key found.")
+        return None
+
+    genai.configure(api_key=result[0]["key_value"])
+    model = genai.GenerativeModel(result[0]["key_type"])
+
+    system_prompt = f"""
+Générer {tc_amount} cas de test pour la spécification fournie.
+La réponse doit être UNIQUEMENT un JSON VALIDE.
+Ne pas ajouter de texte, pas de markdown.
+
+Format exact attendu :
+[
+  {{
+    "testtype": "Manual",
+    "fields": {{
+      "project": {{ "key": "{project_key}" }},
+      "fixVersions": [{{ "name": "{version_name}" }}],
+      "summary": "Titre",
+      "description": "Objectif...\\nPréconditions..."
+    }},
+    "steps": [
+      {{
+        "action": "Action",
+        "data": "",
+        "result": "Résultat attendu"
+      }}
+    ],
+    "xray_test_repository_folder": "{folder_path}"
+  }}
+]
+"""
+
+    full_prompt = system_prompt + "\n\nSpécification :\n" + prompt
+
     try:
         response = model.generate_content(full_prompt)
         json_result = response.text.strip()
     except Exception as e:
-        print(f"❌ Erreur lors de l'appel API: {e}")
+        print(f"❌ API Error: {e}")
         return None
-    
+
     if debug:
-        print("Raw API response:", json_result)
-    
+        print("Raw API response:")
+        print(json_result)
+
+    # 🔥 Clean safely
     json_result = clean_api_response(json_result)
-    if json_result is None:
-        print("❌ Failed to parse JSON from response")
+
+    if not json_result:
+        print("❌ No valid JSON detected.")
         return None
-    
+
     try:
         json_data = json.loads(json_result)
     except json.JSONDecodeError as e:
-        print(f"❌ Failed to parse JSON: {e}")
+        print("❌ JSON Decode Error:", e)
+        print("Problematic JSON:")
+        print(json_result)
         return None
-    
+
     if debug:
-        print("Parsed JSON:", json_result)
-        print("✅ Generation Done.")
-    
-    filtered_json_output = json_data
-    
-    # Save to file with proper path resolution
+        print("✅ JSON Parsed Successfully")
+
+    # 📁 Save file
     if app:
         json_file_path = os.path.join(app.root_path, 'static', 'data', 'output_tc.json')
     else:
         json_file_path = os.path.join(os.path.dirname(__file__), '..', 'static', 'data', 'output_tc.json')
-    
+
     os.makedirs(os.path.dirname(json_file_path), exist_ok=True)
-    
+
     with open(json_file_path, 'w', encoding='utf-8') as file:
-        json.dump(filtered_json_output, file, indent=2, ensure_ascii=False)
-    
-    return filtered_json_output
+        json.dump(json_data, file, indent=2, ensure_ascii=False)
 
+    return json_data
 
-def generate_test_cases_main(req, username, baseurl, project_key, version_name, folder_path, tc_amount, skip_checks, del_tc, debug):
+def generate_test_cases_main(req, username, baseurl, project_key, version_name, folder_path, tc_amount, skip_checks, del_tc, debug,jira_api_token):
     """Main function to generate test cases from Jira requirement"""
     url = baseurl + '/rest/api/2'
-    issue_data = get_issue_data(req, url, username)
+    issue_data = get_issue_data(req, url, username,jira_api_token)
     
     if issue_data:
         summ = "Requirement summary: " + issue_data['fields']['summary']
@@ -392,7 +439,7 @@ def generate_test_cases_main(req, username, baseurl, project_key, version_name, 
     if del_tc and issue_data['fields']['issuelinks']:
         for issue in issue_data['fields']['issuelinks']:
             if issue['type']['name'] == "Test":
-                delete_test_case(issue['inwardIssue']['key'], url, username)
+                delete_test_case(issue['inwardIssue']['key'], url, username,jira_api_token)
                 print("Deleted linked Test Case: " + issue['inwardIssue']['key'], flush=True)
     
     resultatJson = generate_with_openai(req_data, project_key, version_name, folder_path, tc_amount, skip_checks, app=current_app)
@@ -404,6 +451,7 @@ def generate_test_cases_main(req, username, baseurl, project_key, version_name, 
 def generate():
     """Generate test cases from form submission"""
     result = None
+
     if request.method == "POST":
         try:
             req = request.form.get("req")
@@ -416,8 +464,12 @@ def generate():
             skip_checks = "skip_checks" in request.form
             del_tc = "del_tc" in request.form
             debug = "debug" in request.form
-
-            res = generate_test_cases_main(req, username, baseurl, project_key, version_name, folder_path, tc_amount, skip_checks, del_tc, debug)
+            result= JiraXraySettings.get_user_credentials(user_id=current_user.id)
+            print(result["jira_api_token"])
+            result2=APIKey.get_active_keys(user_id=current_user.id)
+            print(result2[0]["key_value"])
+            print(result2[0]["key_type"])
+            res = generate_test_cases_main(req, username, baseurl, project_key, version_name, folder_path, tc_amount, skip_checks, del_tc, debug,result["jira_api_token"])
             return redirect(url_for('main.resultat'))
         except Exception as e:
             result = f"❌ Une erreur est survenue : {e}"
@@ -447,9 +499,19 @@ def import_test_cases_to_xray():
     """Import generated test cases to Xray"""
     url = "https://xray.cloud.getxray.app/api/v2/authenticate"
     headers = {"Content-Type": "application/json"}
-    with open(XRAY_AUTH_JSON, "r") as file:
-        data = file.read()
-    response = requests.post(url, headers=headers, data=data)
+    creds = JiraXraySettings.get_user_credentials(user_id=current_user.id)
+    client_id = creds["xray_client_id"]
+    client_secret = creds["xray_client_secret"]
+
+    if not client_id or not client_secret:
+        raise ValueError("Xray client ID or secret is missing. Please update your Jira/Xray settings.")
+
+    # ✅ Build the auth payload directly from DB values (replaces xray_auth.json)
+    auth_payload = json.dumps({
+        "client_id": client_id,
+        "client_secret": client_secret
+    })
+    response = requests.post(url, headers=headers, data=auth_payload)
     API_TOKEN = response.text.replace('"', '')
 
     json_file_path = os.path.join(current_app.root_path, 'static', 'data', 'output_tc.json')
@@ -475,8 +537,385 @@ def import_test_cases_to_xray():
 @login_required
 def import_xray():
     """Import test cases to Xray"""
+
+    creds = JiraXraySettings.get_user_jira_xray_url(user_id=current_user.id)
+    jira_url = creds["jira_url"].rstrip('/')  # remove trailing slash if any
+    project_key = creds["project_key"]
+
     try:
         result = import_test_cases_to_xray()
-        return jsonify({"message": "Test cases imported successfully!", "result": result})
+
+        xray_url = (
+            f"{jira_url}/projects/{project_key}"
+            f"?selectedItem=com.atlassian.plugins.atlassian-connect-plugin:"
+            f"com.xpandit.plugins.xray__testing-board"
+            f"#!page=test-repository"
+        )
+
+        return jsonify({
+            "message": "Test cases imported successfully!",
+            "result": result,
+            "redirect_url": xray_url
+        })
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# API Keys CRUD
+# ---------------------------------------------------------------------------
+def _mask(val):
+    if not val or len(val) < 8:
+        return '••••••••'
+    return val[:6] + '•••••••' + val[-4:]
+
+@main_bp.route('/api/api-keys', methods=['GET'])
+@login_required
+def get_api_keys():
+    try:
+        result = db.session.execute(text("""
+            SELECT id, user_id, key_name, key_value, key_type, is_active, created_at, last_used
+            FROM api_keys WHERE user_id = :uid ORDER BY created_at DESC
+        """), {"uid": current_user.id})
+        keys = []
+        for row in result.fetchall():
+            d = dict(row._mapping)
+            d['key_value']  = _mask(d['key_value'])
+            d['created_at'] = d['created_at'].isoformat() if d['created_at'] else None
+            d['last_used']  = d['last_used'].isoformat()  if d['last_used']  else None
+            keys.append(d)
+        return jsonify({"success": True, "keys": keys}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@main_bp.route('/api/api-keys-xray', methods=['POST'])
+@login_required
+def create_api_key():
+    body = request.get_json(force=True, silent=True)
+    if not body:
+        return jsonify({"success": False, "error": "Cannot parse request body"}), 400
+
+    key_name  = str(body.get('key_name')  or '').strip()
+    key_type  = str(body.get('key_type')  or '').strip()
+    key_value = str(body.get('key_value') or '').strip()
+    raw       = body.get('is_active', True)
+    is_active = raw if isinstance(raw, bool) else str(raw).lower() not in ('false', '0', 'no', '')
+
+    if not key_name:  return jsonify({"success": False, "error": "key_name is required"}), 400
+    if not key_type:  return jsonify({"success": False, "error": "key_type is required"}), 400
+    if not key_value: return jsonify({"success": False, "error": "key_value is required"}), 400
+
+    try:
+        # ✅ Use ORM insert — works on PostgreSQL, MySQL, and SQLite
+        new_key = APIKey(
+            user_id    = current_user.id,
+            key_name   = key_name,
+            key_value  = key_value,
+            key_type   = key_type,
+            is_active  = is_active,
+            created_at = datetime.utcnow(),
+            last_used = datetime.utcnow()
+
+
+
+        )
+        db.session.add(new_key)
+        db.session.commit()          # ✅ commit first
+        new_id = new_key.id          # ✅ read ID after commit (ORM populates it)
+
+        return jsonify({
+            "success": True,
+            "message": "API key created",
+            "id":      new_id
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ create_api_key error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@main_bp.route('/api/api-keys/<int:key_id>', methods=['PUT'])
+@login_required
+def update_api_key(key_id):
+    try:
+        check = db.session.execute(
+            text("SELECT id FROM api_keys WHERE id=:id AND user_id=:uid"),
+            {"id": key_id, "uid": current_user.id}
+        ).fetchone()
+        if not check:
+            return jsonify({"success": False, "error": "Key not found"}), 404
+        body      = request.get_json()
+        key_name  = (body.get('key_name')  or '').strip()
+        key_type  = (body.get('key_type')  or '').strip()
+        is_active = bool(body.get('is_active', True))
+        new_value = (body.get('key_value') or '').strip()
+        if new_value:
+            db.session.execute(text(
+                "UPDATE api_keys SET key_name=:n, key_type=:t, key_value=:v, is_active=:a "
+                "WHERE id=:id AND user_id=:uid"
+            ), {"n": key_name, "t": key_type, "v": new_value, "a": is_active,
+                "id": key_id, "uid": current_user.id})
+        else:
+            db.session.execute(text(
+                "UPDATE api_keys SET key_name=:n, key_type=:t, is_active=:a "
+                "WHERE id=:id AND user_id=:uid"
+            ), {"n": key_name, "t": key_type, "a": is_active,
+                "id": key_id, "uid": current_user.id})
+        db.session.commit()
+        return jsonify({"success": True, "message": "Key updated"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@main_bp.route('/api/api-keys/<int:key_id>', methods=['DELETE'])
+@login_required
+def delete_api_key(key_id):
+    try:
+        check = db.session.execute(
+            text("SELECT id FROM api_keys WHERE id=:id AND user_id=:uid"),
+            {"id": key_id, "uid": current_user.id}
+        ).fetchone()
+        if not check:
+            return jsonify({"success": False, "error": "Key not found"}), 404
+        db.session.execute(
+            text("DELETE FROM api_keys WHERE id=:id AND user_id=:uid"),
+            {"id": key_id, "uid": current_user.id}
+        )
+        db.session.commit()
+        return jsonify({"success": True, "message": "Key deleted"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@main_bp.route('/api/api-keys/by-type/<string:key_type>', methods=['GET'])
+@login_required
+def get_key_by_type(key_type):
+    try:
+        row = db.session.execute(text("""
+            SELECT id, key_name, key_value FROM api_keys
+            WHERE user_id=:uid AND key_type=:t AND is_active=TRUE
+            ORDER BY created_at DESC LIMIT 1
+        """), {"uid": current_user.id, "t": key_type}).fetchone()
+        if not row:
+            return jsonify({"success": False, "error": f"No active {key_type} key found"}), 404
+        db.session.execute(
+            text("UPDATE api_keys SET last_used=:now WHERE id=:id"),
+            {"now": datetime.utcnow(), "id": row.id}
+        )
+        db.session.commit()
+        return jsonify({"success": True, "id": row.id,
+                        "key_name": row.key_name, "key_value": row.key_value}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@main_bp.route('/api/api-keys/history', methods=['GET'])
+@login_required
+def get_keys_history():
+    try:
+        rows = db.session.execute(text("""
+            SELECT key_name, key_type, created_at, last_used FROM api_keys
+            WHERE user_id=:uid ORDER BY COALESCE(last_used, created_at) DESC LIMIT 20
+        """), {"uid": current_user.id}).fetchall()
+        history = []
+        for row in rows:
+            d = dict(row._mapping)
+            if d['last_used']:
+                history.append({"timestamp": d['last_used'].isoformat(),
+                                 "action": "used", "key_name": d['key_name'],
+                                 "details": d['key_type']})
+            history.append({"timestamp": d['created_at'].isoformat(),
+                             "action": "created", "key_name": d['key_name'],
+                             "details": d['key_type']})
+        history.sort(key=lambda x: x['timestamp'], reverse=True)
+        return jsonify({"success": True, "history": history[:20]}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── Admin guard decorator ─────────────────────────────────────────────────────
+def admin_required(f):
+    """Decorator: only allow users with is_admin=True."""
+    @wraps(f)
+    @login_required
+    def decorated(*args, **kwargs):
+        if not current_user.is_admin:
+            abort(403)
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ── Page route ────────────────────────────────────────────────────────────────
+@main_bp.route('/admin/users')
+@admin_required
+def admin_users():
+    """Render the admin user management page."""
+    return render_template('main/admin_users.html')
+
+
+# ── GET all users ─────────────────────────────────────────────────────────────
+@main_bp.route('/api/admin/users', methods=['GET'])
+@admin_required
+def api_get_all_users():
+    """Return all users as JSON."""
+    try:
+        users = User.query.order_by(User.created_at.desc()).all()
+        return jsonify({
+            "success": True,
+            "users": [
+                {
+                    "id":            u.id,
+                    "username":      u.username,
+                    "email":         u.email,
+                    "first_name":    u.first_name  or "",
+                    "last_name":     u.last_name   or "",
+                    "avatar":        u.avatar      or "👤",
+                    "is_active":     u.is_active,
+                    "is_admin":      u.is_admin,
+                    "created_at":    u.created_at.isoformat()    if u.created_at    else None,
+                    "updated_at":    u.updated_at.isoformat()    if u.updated_at    else None,
+                    "last_activity": u.last_activity.isoformat() if u.last_activity else None,
+                }
+                for u in users
+            ]
+        }), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── POST create user ──────────────────────────────────────────────────────────
+@main_bp.route('/api/admin/users', methods=['POST'])
+@admin_required
+def api_create_user():
+    """Create a new user."""
+    body = request.get_json(force=True, silent=True) or {}
+
+    username   = (body.get('username')   or '').strip()
+    email      = (body.get('email')      or '').strip()
+    password   = (body.get('password')   or '').strip()
+    first_name = (body.get('first_name') or '').strip()
+    last_name  = (body.get('last_name')  or '').strip()
+    avatar     = (body.get('avatar')     or '👤').strip()
+    is_admin   = bool(body.get('is_admin',  False))
+    is_active  = bool(body.get('is_active', True))
+
+    if not username: return jsonify({"success": False, "error": "username is required"}), 400
+    if not email:    return jsonify({"success": False, "error": "email is required"}),    400
+    if not password: return jsonify({"success": False, "error": "password is required"}), 400
+
+    if User.query.filter_by(username=username).first():
+        return jsonify({"success": False, "error": f"Username '{username}' already exists"}), 409
+    if User.query.filter_by(email=email).first():
+        return jsonify({"success": False, "error": f"Email '{email}' already exists"}), 409
+
+    try:
+        user = User(
+            username   = username,
+            email      = email,
+            first_name = first_name,
+            last_name  = last_name,
+            avatar     = avatar,
+            is_admin   = is_admin,
+            is_active  = is_active,
+        )
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        send_welcome_email(user.email, user.username, password)
+        return jsonify({"success": True, "message": "User created", "id": user.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── PUT update user ───────────────────────────────────────────────────────────
+@main_bp.route('/api/admin/users/<int:user_id>', methods=['PUT'])
+@admin_required
+def api_update_user(user_id):
+    """Update an existing user."""
+    user = User.query.get_or_404(user_id)
+    body = request.get_json(force=True, silent=True) or {}
+
+    email      = (body.get('email')      or '').strip()
+    first_name = (body.get('first_name') or '').strip()
+    last_name  = (body.get('last_name')  or '').strip()
+    avatar     = (body.get('avatar')     or '👤').strip()
+    password   = (body.get('password')   or '').strip()
+    is_admin   = bool(body.get('is_admin',  user.is_admin))
+    is_active  = bool(body.get('is_active', user.is_active))
+
+    if not email:
+        return jsonify({"success": False, "error": "email is required"}), 400
+
+    # Check email uniqueness (excluding self)
+    existing = User.query.filter_by(email=email).first()
+    if existing and existing.id != user_id:
+        return jsonify({"success": False, "error": f"Email '{email}' is already in use"}), 409
+
+    try:
+        user.email      = email
+        user.first_name = first_name
+        user.last_name  = last_name
+        user.avatar     = avatar
+        user.is_admin   = is_admin
+        user.is_active  = is_active
+        user.updated_at = datetime.utcnow()
+
+        if password:                         # only update if provided
+            user.set_password(password)
+
+        db.session.commit()
+        return jsonify({"success": True, "message": "User updated"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── POST toggle active/inactive ───────────────────────────────────────────────
+@main_bp.route('/api/admin/users/<int:user_id>/toggle-status', methods=['POST'])
+@admin_required
+def api_toggle_user_status(user_id):
+    """Activate or deactivate a user account."""
+    # Prevent admin from deactivating their own account
+    if user_id == current_user.id:
+        return jsonify({"success": False, "error": "You cannot deactivate your own account"}), 400
+
+    user = User.query.get_or_404(user_id)
+    body = request.get_json(force=True, silent=True) or {}
+
+    try:
+        user.is_active  = bool(body.get('is_active', not user.is_active))
+        user.updated_at = datetime.utcnow()
+        db.session.commit()
+        return jsonify({
+            "success":   True,
+            "is_active": user.is_active,
+            "message":   f"User {'activated' if user.is_active else 'deactivated'}"
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── DELETE user ───────────────────────────────────────────────────────────────
+@main_bp.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
+@admin_required
+def api_delete_user(user_id):
+    """Permanently delete a user."""
+    if user_id == current_user.id:
+        return jsonify({"success": False, "error": "You cannot delete your own account"}), 400
+
+    user = User.query.get_or_404(user_id)
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"success": True, "message": f"User '{user.username}' deleted"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500

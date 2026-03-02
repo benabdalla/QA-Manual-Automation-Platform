@@ -35,37 +35,23 @@
                             <p class="subtitle">Créez facilement vos cas de test</p>
                         </div>
 
-                        <!-- Load Settings Button (moved INSIDE the card, above the form) -->
-                        <div class="d-flex align-items-center gap-2 mb-4">
-                            <button type="button" class="btn btn-outline-secondary"
-                                    id="btnLoadSettings" onclick="loadJiraXraySettings()">
-                                <i class="fas fa-sync-alt"></i> Charger mes paramètres
-                            </button>
-                            <span id="settingsStatus" class="small"></span>
-                        </div>
+<form method="POST" action="{{ url_for('main.test_generator_index') }}" id="testForm">
 
-                      <form method="POST"
-                              action="{{ url_for('main.generate') }}"
-                              id="testForm">
-
-
-                            <!-- Radio: Input Source -->
+                            <!-- Radio Button: Input Source Selection -->
                             <div class="form-group mb-4">
                                 <label class="fw-bold mb-2">📌 Source de l'exigence :</label>
                                 <div class="d-flex gap-4">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio"
-                                               name="input_source" id="radioJiraKey"
-                                               value="jira_key" checked
+                                        <input class="form-check-input" type="radio" name="input_source"
+                                               id="radioJiraKey" value="jira_key" checked
                                                onchange="toggleInputSource(this.value)">
                                         <label class="form-check-label" for="radioJiraKey">
                                             🔑 Clé Jira (Requirement Key)
                                         </label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio"
-                                               name="input_source" id="radioUserStory"
-                                               value="user_story"
+                                        <input class="form-check-input" type="radio" name="input_source"
+                                               id="radioUserStory" value="user_story"
                                                onchange="toggleInputSource(this.value)">
                                         <label class="form-check-label" for="radioUserStory">
                                             📝 User Story (texte libre)
@@ -74,65 +60,63 @@
                                 </div>
                             </div>
 
-                            <!-- Field: Jira Key -->
+                            <!-- Field: Jira Requirement Key (shown by default) -->
                             <div class="form-group mb-3" id="field_req">
-                                <label>🔑 Clé Requirement (ex: W250-6073) :</label>
+                                <label>🔑 Clé Requirement (ex: W250-6073):</label>
                                 <input type="text" class="form-control" name="req"
-                                       placeholder="W250-6073">
+                                       placeholder="W250-6073" >
+
                             </div>
 
-                            <!-- Field: User Story (hidden by default) -->
+                            <!-- Field: User Story Textarea (hidden by default) -->
                             <div class="form-group mb-3 d-none" id="field_user_story">
                                 <label>📝 User Story :</label>
                                 <textarea class="form-control" name="user_story" rows="6"
                                           placeholder="En tant que [utilisateur], je veux [fonctionnalité] afin de [bénéfice]...&#10;&#10;Critères d'acceptation :&#10;- ...&#10;- ..."></textarea>
                                 <div class="form-text text-muted">
-                                    Décrivez votre user story avec les critères d'acceptation
-                                    pour de meilleurs résultats.
+                                    Décrivez votre user story avec les critères d'acceptation pour de meilleurs résultats.
                                 </div>
                             </div>
 
                             <div class="form-group mb-3">
-                                <label>👤 Nom d'utilisateur Jira :</label>
-                                <input type="email" class="form-control" name="username"
-                                       value="{{ settings.jira_username if settings else '' }}"
-                                       required>
+                                <label>👤 Nom d'utilisateur Jira:</label>
+                                <input type="email" class="form-control"
+                                       name="username" required>
                             </div>
 
                             <div class="form-group mb-3">
-                                <label>🌐 URL Jira :</label>
-                                <input type="text" class="form-control" name="baseurl"
-                                       value="{{ settings.jira_url if settings else '' }}"
-                                       required>
+                                <label>🌐 URL Jira:</label>
+                                <input type="text" class="form-control"
+                                   value="{{ settings.jira_url if settings else '' }}"
+                                       name="baseurl" required>
                             </div>
 
                             <div class="form-group mb-3">
-                                <label>📂 Clé du projet :</label>
-                                <input type="text" class="form-control" name="project_key"
-                                       value="{{ settings.project_key if settings else '' }}"
-                                       required>
+                                <label>📂 Clé du projet:</label>
+                                <input type="text" class="form-control"
+
+                                       name="project_key" required>
                             </div>
 
                             <div class="form-group mb-3">
-                                <label>📋 Nom de la version :</label>
-                                <input type="text" class="form-control" name="version_name"
-                                       value="{{ settings.version_name if settings else '' }}"
-                                       required>
+                                <label>📋 Nom de la version:</label>
+                                <input type="text" class="form-control"
+                            value="{{ settings.version_name if settings else '' }}"
+                                       name="version_name" required>
                             </div>
 
                             <div class="form-group mb-3">
-                                <label>📁 Chemin du dossier Xray :</label>
-                                <input type="text" class="form-control" name="folder_path"
-                                       value="{{ settings.xray_folder_path if settings else '' }}"
-                                       required>
+                                <label>📁 Chemin du dossier Xray:</label>
+                                <input type="text" class="form-control"
+                                       name="folder_path" required
+                                >
                             </div>
 
-                            <div class="form-group mb-3">
-                                <label>🔢 Nombre de cas de test à générer :</label>
-                                <input type="number" class="form-control" name="tc_amount"
-                                       value="{{ settings.num_test_cases if settings else 1 }}"
-                                       min="1" max="20">
-                            </div>
+<!--                            <div class="form-group mb-3">-->
+<!--                                <label>🔢 Nombre de cas de test à générer:</label>-->
+<!--                                <input type="number" class="form-control"-->
+<!--                                       name="tc_amount" value="1" min="1" max="100">-->
+<!--                            </div>-->
 
                             <button type="submit" class="btn btn-primary w-100">
                                 🚀 Générer
@@ -140,13 +124,14 @@
 
                             <div class="loading text-center mt-3 d-none" id="loading">
                                 <div class="spinner-border text-primary"></div>
-                                <p class="mt-2">Génération en cours... (peut prendre 2–5 minutes)</p>
+                                <p class="mt-2">Génération en cours...</p>
                             </div>
                         </form>
 
                         {% if result %}
-                        <div class="alert alert-danger mt-4">
-                            {{ result }}
+                        <div class="result mt-4">
+                            <h3>✅ Résultat :</h3>
+                            <p>{{ result }}</p>
                         </div>
                         {% endif %}
 
@@ -165,20 +150,25 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <h6 class="text-primary"><i class="fas fa-info-circle"></i> About</h6>
+                        <h6 class="text-primary">
+                            <i class="fas fa-info-circle"></i> About
+                        </h6>
                         <p class="small text-muted">
-                            Generate AI-powered test cases directly from your Jira requirements
-                            or a custom user story.
+                            Generate AI-powered test cases directly from your Jira requirements or a custom user story.
                         </p>
                     </div>
                     <div class="mb-3">
-                        <h6 class="text-primary"><i class="fas fa-clock"></i> Time</h6>
+                        <h6 class="text-primary">
+                            <i class="fas fa-clock"></i> Time
+                        </h6>
                         <p class="small text-muted">
                             Generation typically takes 2–5 minutes depending on test case count.
                         </p>
                     </div>
                     <div class="mb-3">
-                        <h6 class="text-primary"><i class="fas fa-file-export"></i> Output</h6>
+                        <h6 class="text-primary">
+                            <i class="fas fa-file-export"></i> Output
+                        </h6>
                         <p class="small text-muted">
                             Results are saved as JSON and can be imported to Xray.
                         </p>
@@ -189,7 +179,7 @@
                         </h6>
                         <ul class="small text-muted list-unstyled">
                             <li>✓ Valid Jira account</li>
-                            <li>✓ Gemini API key configured (type: <code>gemini</code>)</li>
+                            <li>✓ API token configured</li>
                             <li>✓ Xray plugin installed</li>
                         </ul>
                     </div>
@@ -199,17 +189,24 @@
 
     </div>
 </div>
+<!-- Load Settings Button -->
+<div class="d-flex align-items-center gap-2 mb-4">
+    <button type="button" class="btn btn-outline-secondary" id="btnLoadSettings" onclick="loadJiraXraySettings()">
+        <i class="fas fa-sync-alt"></i> Charger mes paramètres
+    </button>
+    <span id="settingsStatus" class="small"></span>
+</div>
 
 <script>
 /**
- * Fetch Jira/Xray settings from the server and populate form fields.
- * ✅ FIX: reads result.data (object), not result.settings[0] (broken array access)
+ * Fetch Jira/Xray settings from the server and populate form fields
  */
 async function loadJiraXraySettings() {
     const btn    = document.getElementById('btnLoadSettings');
     const status = document.getElementById('settingsStatus');
 
-    btn.disabled  = true;
+    // Show loading state
+    btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Chargement...';
     status.innerHTML = '';
 
@@ -217,7 +214,7 @@ async function loadJiraXraySettings() {
         const response = await fetch('/api/jira-xray-settings', {
             method: 'GET',
             headers: {
-                'Content-Type':    'application/json',
+                'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             }
         });
@@ -225,49 +222,46 @@ async function loadJiraXraySettings() {
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-            // 404 just means no settings saved yet — don't alarm the user
-            if (response.status === 404) {
-                showSettingsStatus('info', 'ℹ️ Aucun paramètre sauvegardé.');
-            } else {
-                showSettingsStatus('error', '❌ ' + (result.message || 'Erreur lors du chargement.'));
-            }
+            showSettingsStatus('error', '❌ ' + (result.message || 'Erreur lors du chargement.'));
             return;
         }
 
-        // ✅ FIX: the API returns result.data (an object), not result.settings[0]
-        fillFormWithSettings(result.settings[0]);
+        // ✅ Fill form fields with loaded data
+        fillFormWithSettings(result.settings);
         showSettingsStatus('success', '✅ Paramètres chargés avec succès !');
 
     } catch (error) {
         console.error('loadJiraXraySettings error:', error);
         showSettingsStatus('error', '❌ Erreur réseau. Veuillez réessayer.');
     } finally {
-        btn.disabled  = false;
+        // Restore button
+        btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-sync-alt"></i> Charger mes paramètres';
     }
 }
 
 /**
- * Map API data fields to form inputs.
+ * Map API data to form fields and fill them
  */
 function fillFormWithSettings(data) {
+    // ✅ Guard: if data is null/undefined, stop
     if (!data) {
         showSettingsStatus('error', '❌ Aucune donnée reçue.');
         return;
     }
 
     const fieldMap = {
-        'req':          data.jira_requirement_key || '',
-        'username':     data.jira_username        || '',
-        'baseurl':      data.jira_url             || '',
-        'project_key':  data.project_key          || '',
-        'version_name': data.version_name         || '',
-        'folder_path':  data.xray_folder_path     || '',
-        'tc_amount':    data.num_test_cases        || 1,
+        'req':          data[0].jira_requirement_key || '',
+        'username':     data[0].jira_username        || '',
+        'baseurl':      data[0].jira_url             || '',
+        'project_key':  data[0].project_key          || '',
+        'version_name': data[0].version_name         || '',
+        'folder_path':  data[0].xray_folder_path     || '',
+        'tc_amount':    data[0].num_test_cases        || 1,
     };
 
-    Object.entries(fieldMap).forEach(([name, value]) => {
-        const el = document.querySelector(`[name="${name}"]`);
+    Object.entries(fieldMap).forEach(([fieldName, value]) => {
+        const el = document.querySelector(`[name="${fieldName}"]`);
         if (el) {
             el.value = value;
             if (value) {
@@ -278,53 +272,52 @@ function fillFormWithSettings(data) {
     });
 }
 
+/**
+ * Show status message below the button
+ */
 function showSettingsStatus(type, message) {
     const status = document.getElementById('settingsStatus');
-    const cls = type === 'success' ? 'text-success'
-              : type === 'error'   ? 'text-danger'
-              :                      'text-secondary';
-    status.className  = `small ${cls}`;
-    status.innerHTML  = message;
+    status.className = `small ${type === 'success' ? 'text-success' : 'text-danger'}`;
+    status.innerHTML = message;
+    // Auto-hide after 4 seconds
     setTimeout(() => { status.innerHTML = ''; }, 4000);
 }
 
-// Auto-load on page ready
+// ✅ Auto-load settings on page load
 document.addEventListener('DOMContentLoaded', function () {
     loadJiraXraySettings();
 });
 
-/**
- * Toggle between Jira key and User Story input modes.
- */
-function toggleInputSource(value) {
-    const fieldReq       = document.getElementById('field_req');
-    const fieldUserStory = document.getElementById('field_user_story');
-    const reqInput       = fieldReq.querySelector('input[name="req"]');
-    const storyTextarea  = fieldUserStory.querySelector('textarea[name="user_story"]');
+    function toggleInputSource(value) {
+        const fieldReq = document.getElementById('field_req');
+        const fieldUserStory = document.getElementById('field_user_story');
+        const reqInput = fieldReq.querySelector('input[name="req"]');
+        const userStoryTextarea = fieldUserStory.querySelector('textarea[name="user_story"]');
 
-    if (value === 'user_story') {
-        fieldReq.classList.add('d-none');
-        fieldUserStory.classList.remove('d-none');
-        reqInput.removeAttribute('required');
-        storyTextarea.setAttribute('required', 'required');
-    } else {
-        fieldReq.classList.remove('d-none');
-        fieldUserStory.classList.add('d-none');
-        reqInput.setAttribute('required', 'required');
-        storyTextarea.removeAttribute('required');
+        if (value === 'user_story') {
+            // Show user story textarea, hide requirement key
+            fieldReq.classList.add('d-none');
+            fieldUserStory.classList.remove('d-none');
+            reqInput.removeAttribute('required');
+            userStoryTextarea.setAttribute('required', 'required');
+        } else {
+            // Show requirement key, hide user story textarea
+            fieldReq.classList.remove('d-none');
+            fieldUserStory.classList.add('d-none');
+            reqInput.setAttribute('required', 'required');
+            userStoryTextarea.removeAttribute('required');
+        }
     }
-}
 
-// Show spinner on submit
-document.getElementById('testForm').addEventListener('submit', function () {
-    document.getElementById('loading').classList.remove('d-none');
-    this.querySelector('button[type="submit"]').disabled = true;
-});
+    // Show loading spinner on form submit
+    document.getElementById('testForm').addEventListener('submit', function () {
+        document.getElementById('loading').classList.remove('d-none');
+    });
 
-// Restore correct toggle state on page load (after POST validation errors)
-const selectedRadio = document.querySelector('input[name="input_source"]:checked');
-if (selectedRadio) {
-    toggleInputSource(selectedRadio.value);
-}
+    // Restore correct state on page load (e.g. after a POST with validation error)
+    const selectedRadio = document.querySelector('input[name="input_source"]:checked');
+    if (selectedRadio) {
+        toggleInputSource(selectedRadio.value);
+    }
 </script>
 {% endblock %}

@@ -17,12 +17,19 @@
                     </p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <span class="badge bg-success me-2">
-                        <i class="fas fa-check-circle"></i> Active
-                    </span>
-                    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-user-cog"></i> Profile
-                    </a>
+
+<div class="col-md-12 text-end d-flex gap-2 justify-content-end align-items-center">
+    {# ✅ Show Users button ONLY when current user is admin #}
+    {% if current_user.is_admin %}
+    <a href="{{ url_for('main.admin_users') }}" class="btn btn-outline-success btn-sm w50">
+        <i class="fas fa-users-cog"></i> Users
+    </a>
+    {% endif %}
+
+    <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-primary btn-sm w50">
+        <i class="fas fa-user-cog"></i> Profile
+    </a>
+</div>
                 </div>
             </div>
         </div>
@@ -43,7 +50,7 @@
             <div class="col-md-3 mb-3">
                 <div class="stat-card">
                     <div class="stat-icon">
-                        <i class="fas fa-browser"></i>
+                        <i class="fab fa-chrome"></i>
                     </div>
                     <div class="stat-content">
                         <h6>Browser Configs</h6>
@@ -430,26 +437,44 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Fetch agent generator LLM models from API and populate the list
     fetch('/api/code-generator/agent-settings')
         .then(res => res.json())
         .then(data => {
             const list = document.getElementById('llm-model-list');
             if (!list) return;
+
             list.innerHTML = '';
+
             if (data.success && data.agent_settings && data.agent_settings.length > 0) {
+
+                const uniqueModels = new Set();
+                const filteredSettings = [];
+
                 data.agent_settings.forEach(setting => {
+                    const key = setting.llm_provider + '|' + setting.llm_model_name;
+
+                    if (!uniqueModels.has(key)) {
+                        uniqueModels.add(key);
+                        filteredSettings.push(setting);
+                    }
+                });
+
+                filteredSettings.forEach(setting => {
                     const li = document.createElement('li');
-                    li.innerHTML = `<b>${setting.llm_provider}</b>: <span class="text-muted">${setting.llm_model_name}</span>`;
+                    li.innerHTML = `<b>${setting.llm_provider}</b>:
+                                    <span class="text-muted">${setting.llm_model_name}</span>`;
                     list.appendChild(li);
                 });
+
             } else {
                 list.innerHTML = '<li class="text-muted">No LLM models configured yet.</li>';
             }
         })
         .catch(() => {
             const list = document.getElementById('llm-model-list');
-            if (list) list.innerHTML = '<li class="text-muted">Unable to load LLM models.</li>';
+            if (list) {
+                list.innerHTML = '<li class="text-muted">Unable to load LLM models.</li>';
+            }
         });
 });
 </script>

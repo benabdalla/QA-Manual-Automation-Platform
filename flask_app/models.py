@@ -56,8 +56,30 @@ class APIKey(db.Model):
     key_type = db.Column(db.String(50), default='api_key')  # api_key, openai, jira, etc.
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_used = db.Column(db.DateTime)
-    
+    last_used = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @staticmethod
+    def get_active_keys(user_id):
+        """
+        Return key_name + key_value for ALL active keys of a user.
+
+        Usage:
+            keys = APIKey.get_active_keys(current_user.id)
+            # [{"key_name": "My Gemini Key", "key_value": "AIza..."}]
+        """
+        rows = APIKey.query.filter_by(
+            user_id=user_id,
+            is_active=True  # ✅ is_active = 1
+        ).order_by(APIKey.created_at.desc()).all()
+
+        return [
+            {
+                "key_type": row.key_type,
+                "key_value": row.key_value
+            }
+            for row in rows
+        ]
+
     def __repr__(self):
         return f'<APIKey {self.key_name}>'
 
@@ -184,6 +206,51 @@ class JiraXraySettings(db.Model):
         except Exception as e:
             db.session.rollback()
             raise RuntimeError(f"Failed to fetch jira_xray_settings: {str(e)}")
+
+    @staticmethod
+    def get_user_credentials(user_id):
+        """
+        Return only the 3 credential fields for a user.
+        Raises ValueError if no active settings found.
+        """
+        row = JiraXraySettings.query.filter_by(
+            user_id=user_id,
+            is_active=True
+        ).order_by(JiraXraySettings.updated_at.desc()).first()
+
+        if not row:
+            raise ValueError(
+                f"No active Jira/Xray settings found for user_id={user_id}. "
+                "Please configure them in Settings → Jira/Xray."
+            )
+
+        return {
+            "jira_api_token": row.jira_api_token or "",
+            "xray_client_id": row.xray_client_id or "",
+            "xray_client_secret": row.xray_client_secret or "",
+        }
+    @staticmethod
+    def get_user_jira_xray_url(user_id):
+        """
+        Return only the 3 credential fields for a user.
+        Raises ValueError if no active settings found.
+        """
+        row = JiraXraySettings.query.filter_by(
+            user_id=user_id,
+            is_active=True
+        ).order_by(JiraXraySettings.updated_at.desc()).first()
+
+        if not row:
+            raise ValueError(
+                f"No active Jira/Xray settings found for user_id={user_id}. "
+                "Please configure them in Settings → Jira/Xray."
+            )
+
+        return {
+            "jira_url": row.jira_url or "",
+            "project_key": row.project_key or "",
+        }
+
 
 
 class AgentSettings(db.Model):

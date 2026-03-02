@@ -3,244 +3,490 @@
     "testtype": "Manual",
     "fields": {
       "project": {
-        "key": "CDT"
+        "key": "DEV"
       },
       "fixVersions": [
         {
-          "name": "w25"
+          "name": "v1"
         }
       ],
-      "summary": "Ajout de champs produit à l'enregistrement des parties intéresséesnghj",
-      "description": "Vérifier l'ajout et le fonctionnement des champs liés au produit dans la section d'enregistrement d'une fiche partie intéressée.\nPréconditions: L'utilisateur doit avoir accès au module des parties intéressées. Un ou plusieurs produits doivent être configurés dans le système."
+      "summary": "Authentification réussie avec des identifiants valides (Email)",
+      "description": "Objectif : Vérifier qu'un utilisateur peut se connecter avec un email et un mot de passe valides.\nPréconditions : Compte actif existant dans la base de données."
     },
     "steps": [
       {
-        "action": "Sélectionner un produit dans le pop-up et valider.",
-        "data": "",
-        "result": "Le produit sélectionné doit être associé à la fiche de la partie intéressée. Les champs 'Code produit', 'Numéro OF', 'N° Lot', 'Qté produite', 'Qté Détectée', 'Unité', 'Fournisseur' doivent pouvoir être renseignés pour ce produit."
+        "action": "Saisir un email valide dans le champ 'Email / Username'",
+        "data": "user@example.com",
+        "result": "L'email est saisi."
       },
       {
-        "action": "qsfgrb",
+        "action": "Saisir le mot de passe correspondant",
+        "data": "Password123!",
+        "result": "Le mot de passe est masqué."
+      },
+      {
+        "action": "Cliquer sur le bouton 'Se connecter'",
         "data": "",
-        "result": "dsfdf"
+        "result": "L'utilisateur est redirigé vers son espace personnel."
       }
     ],
-    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+    "xray_test_repository_folder": "DEV"
   },
   {
     "testtype": "Manual",
     "fields": {
       "project": {
-        "key": "CDT"
+        "key": "DEV"
       },
       "fixVersions": [
         {
-          "name": "w2524"
+          "name": "v1"
         }
       ],
-      "summary": "Ajout et gestion des responsables de traitement",
-      "description": "Vérifier l'ajout et la gestion des responsables de traitement dans la section d'enregistrement d'une fiche partie intéressée, et la gestion des notifications.\nPréconditions: L'utilisateur doit avoir accès au module des parties intéressées. Des employés doivent être configurés comme responsables de traitement potentiels."
+      "summary": "Authentification réussie avec un nom d'utilisateur (Username)",
+      "description": "Objectif : Vérifier la connexion via le pseudo au lieu de l'email.\nPréconditions : Compte avec pseudo 'testuser' existant."
     },
     "steps": [
       {
-        "action": "Accéder à la fiche d'une partie intéressée et ouvrir la section d'enregistrement.",
-        "data": "",
-        "result": "La section d'enregistrement doit contenir une section 'Responsable de traitement' avec un bouton '+'. "
+        "action": "Saisir le nom d'utilisateur dans le champ 'Email / Username'",
+        "data": "testuser",
+        "result": "Le nom d'utilisateur est saisi."
       },
       {
-        "action": "Cliquer sur le bouton '+' dans la section 'Responsable de traitement'.",
-        "data": "",
-        "result": "Un pop-up doit s'afficher avec une liste d'employés pouvant être sélectionnés comme responsables de traitement."
-      },
-      {
-        "action": "Sélectionner un ou plusieurs responsables de traitement dans le pop-up et valider.",
-        "data": "",
-        "result": "Les responsables de traitement sélectionnés doivent être ajoutés à la liste des responsables de traitement de la fiche. Chaque responsable de traitement doit recevoir une notification dans son agenda."
-      },
-      {
-        "action": "Un des responsables de traitement traite la demande de la partie intéressée.",
-        "data": "",
-        "result": "La notification de la demande doit disparaître de l'agenda des autres responsables de traitement."
+        "action": "Saisir le mot de passe valide et cliquer sur 'Se connecter'",
+        "data": "Password123!",
+        "result": "Connexion réussie, accès à l'espace personnel."
       }
     ],
-    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+    "xray_test_repository_folder": "DEV"
   },
   {
     "testtype": "Manual",
     "fields": {
       "project": {
-        "key": "CDT"
+        "key": "DEV"
       },
       "fixVersions": [
         {
-          "name": "w2524"
+          "name": "v1"
         }
       ],
-      "summary": "Rattachement de réclamations fournisseurs dans les détails",
-      "description": "Vérifier la possibilité de rattacher des réclamations fournisseurs à la section 'Détails' d'une fiche de partie intéressée.\nPréconditions: Le module fournisseur doit être vendu et installé. Des réclamations fournisseurs doivent exister dans le système."
+      "summary": "Échec d'authentification avec un mot de passe incorrect",
+      "description": "Objectif : Vérifier le message d'erreur en cas de mauvais mot de passe.\nPréconditions : Email valide existant."
     },
     "steps": [
       {
-        "action": "Accéder à la fiche d'une partie intéressée et ouvrir la section 'Détails'.",
-        "data": "",
-        "result": "La section 'Détails' doit contenir une option pour rattacher des réclamations fournisseurs."
-      },
-      {
-        "action": "Cliquer sur l'option pour rattacher des réclamations fournisseurs.",
-        "data": "",
-        "result": "Une liste des réclamations fournisseurs disponibles doit s'afficher."
-      },
-      {
-        "action": "Sélectionner une ou plusieurs réclamations fournisseurs et valider.",
-        "data": "",
-        "result": "Les réclamations fournisseurs sélectionnées doivent être rattachées à la section 'Détails' de la fiche partie intéressée."
+        "action": "Saisir un email valide et un mot de passe erroné",
+        "data": "user@example.com / wrongpass",
+        "result": "Message d'erreur : Identifiants incorrects."
       }
     ],
-    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+    "xray_test_repository_folder": "DEV"
   },
   {
     "testtype": "Manual",
     "fields": {
       "project": {
-        "key": "CDT"
+        "key": "DEV"
       },
       "fixVersions": [
         {
-          "name": "w2524"
+          "name": "v1"
         }
       ],
-      "summary": "Ajout d'informations de traitement",
-      "description": "Vérifier l'ajout des champs liés au traitement de la demande dans la partie traitement de la fiche partie intéressée.\nPréconditions: L'utilisateur doit avoir accès au module des parties intéressées."
+      "summary": "Validation du champ Email obligatoire",
+      "description": "Objectif : Vérifier qu'on ne peut pas se connecter sans email.\nPréconditions : Page de login affichée."
     },
     "steps": [
       {
-        "action": "Accéder à la fiche d'une partie intéressée et ouvrir la section 'Traitement'.",
-        "data": "",
-        "result": "La section 'Traitement' doit contenir les champs suivants: Nom du responsable de traitement, Date de traitement, Rapport de traitement, et un bouton 'Valider'."
+        "action": "Laisser le champ 'Email' vide et saisir un mot de passe",
+        "data": "Password123!",
+        "result": "Un message indique que le champ Email est obligatoire."
       },
       {
-        "action": "Remplir les champs Nom du responsable de traitement, Date de traitement et Rapport de traitement.",
+        "action": "Cliquer sur 'Se connecter'",
         "data": "",
-        "result": "Les informations saisies doivent être affichées correctement dans les champs correspondants."
-      },
-      {
-        "action": "Cliquer sur le bouton 'Valider'.",
-        "data": "",
-        "result": "Les informations relatives au traitement doivent être sauvegardées. Seul le responsable de traitement doit pouvoir modifier les informations après la validation, en fonction des droits de modification."
+        "result": "La soumission est bloquée."
       }
     ],
-    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+    "xray_test_repository_folder": "DEV"
   },
   {
     "testtype": "Manual",
     "fields": {
       "project": {
-        "key": "CDT"
+        "key": "DEV"
       },
       "fixVersions": [
         {
-          "name": "w2524"
+          "name": "v1"
         }
       ],
-      "summary": "Paramétrage des champs à masquer",
-      "description": "Vérifier la possibilité de masquer les champs spécifiques de la fiche demande des parties intéressées via le paramétrage.\nPréconditions: L'utilisateur doit avoir les droits d'administrateur pour accéder au paramétrage."
+      "summary": "Validation du champ Mot de passe obligatoire",
+      "description": "Objectif : Vérifier qu'on ne peut pas se connecter sans mot de passe.\nPréconditions : Page de login affichée."
     },
     "steps": [
       {
-        "action": "Accéder à la section de paramétrage des champs à masquer pour le module des parties intéressées.",
-        "data": "",
-        "result": "La section de paramétrage doit contenir les options suivantes: Nom du produit produits (par défaut masqué), Courriers des demandes (par défaut visible), Courrier des réponses aux demandes (par défaut visible), Réclamation client (par défaut visible)."
-      },
-      {
-        "action": "Modifier la visibilité des champs (masquer ou afficher) et sauvegarder les modifications.",
-        "data": "",
-        "result": "Les modifications de visibilité doivent être prises en compte dans la fiche demande des parties intéressées. Les champs masqués ne doivent pas être visibles, et les champs affichés doivent être visibles."
+        "action": "Saisir un email et laisser le mot de passe vide",
+        "data": "user@example.com",
+        "result": "Un message indique que le champ Mot de passe est obligatoire."
       }
     ],
-    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+    "xray_test_repository_folder": "DEV"
   },
   {
     "testtype": "Manual",
     "fields": {
       "project": {
-        "key": "CDT"
+        "key": "DEV"
       },
       "fixVersions": [
         {
-          "name": "w2524"
+          "name": "v1"
         }
       ],
-      "summary": "Vérification de l'aperçu de la fiche",
-      "description": "Vérifier la présence et le contenu correct des informations dans l'aperçu de la fiche demande partie intéressée.\nPréconditions: L'utilisateur doit avoir accès au module des parties intéressées."
+      "summary": "Blocage du compte après 5 tentatives échouées",
+      "description": "Objectif : Vérifier la règle métier de sécurité sur le blocage temporaire.\nPréconditions : Compte utilisateur valide existant."
     },
     "steps": [
       {
-        "action": "Accéder à l'aperçu d'une fiche demande partie intéressée.",
-        "data": "",
-        "result": "L'aperçu doit afficher les sections suivantes avec les informations correspondantes: Partie enregistrement: Code produit, Produit, N°OF, N°LOT, Qté produite, Qté Détectée, Unité. Partie détail: Liste des réclamations fournisseurs avec N° réclamation, Fournisseur, Date réclamation, Type de produit, Type de réclamation. Partie traitement: Nom du responsable de traitement, Rapport de traitement, Date de traitement."
+        "action": "Effectuer 5 tentatives de connexion avec un mot de passe erroné",
+        "data": "5 tentatives",
+        "result": "Le compte est marqué comme temporairement bloqué."
+      },
+      {
+        "action": "Effectuer une 6ème tentative avec les bons identifiants",
+        "data": "user@example.com / Password123!",
+        "result": "Message d'erreur indiquant que le compte est bloqué."
       }
     ],
-    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+    "xray_test_repository_folder": "DEV"
   },
   {
     "testtype": "Manual",
     "fields": {
       "project": {
-        "key": "CDT"
+        "key": "DEV"
       },
       "fixVersions": [
         {
-          "name": "w2524"
+          "name": "v1"
         }
       ],
-      "summary": "Filtre produit dans le reporting",
-      "description": "Vérifier l'ajout et le fonctionnement du filtre 'produit' dans le reporting du bilan des demandes des parties intéressées.\nPréconditions: L'utilisateur doit avoir accès au reporting du bilan des demandes des parties intéressées. Des données doivent être présentes dans le module et liées à différents produits."
+      "summary": "Accès à la récupération de mot de passe",
+      "description": "Objectif : Vérifier le lien 'Mot de passe oublié ?'.\nPréconditions : Page de login affichée."
     },
     "steps": [
       {
-        "action": "Accéder au reporting du bilan des demandes des parties intéressées.",
+        "action": "Cliquer sur le lien 'Mot de passe oublié ?'",
         "data": "",
-        "result": "Le rapport doit contenir un filtre 'produit'."
-      },
-      {
-        "action": "Sélectionner un produit dans le filtre 'produit'.",
-        "data": "",
-        "result": "Le rapport doit filtrer les demandes des parties intéressées et afficher uniquement celles relatives au produit sélectionné."
+        "result": "L'utilisateur est redirigé vers la page de récupération du mot de passe."
       }
     ],
-    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+    "xray_test_repository_folder": "DEV"
   },
   {
     "testtype": "Manual",
     "fields": {
       "project": {
-        "key": "CDT"
+        "key": "DEV"
       },
       "fixVersions": [
         {
-          "name": "w2524"
+          "name": "v1"
         }
       ],
-      "summary": "Ajout de colonnes à l'export utilitaire",
-      "description": "Vérifier l'ajout des nouvelles colonnes dans l'export utilitaire des non-conformités simplifiées.\nPréconditions: L'utilisateur doit avoir accès à l'utilitaire d'export des non-conformités simplifiées."
+      "summary": "Vérification de l'option 'Se souvenir de moi'",
+      "description": "Objectif : Vérifier que l'option peut être cochée.\nPréconditions : Page de login affichée."
     },
     "steps": [
       {
-        "action": "Accéder à l'utilitaire d'export des non-conformités simplifiées.",
+        "action": "Cocher la case 'Se souvenir de moi' avant de se connecter",
         "data": "",
-        "result": "L'utilitaire doit permettre l'export des données."
+        "result": "La case est cochée."
       },
       {
-        "action": "Exporter les données des non-conformités simplifiées.",
+        "action": "Se connecter et fermer le navigateur, puis revenir",
         "data": "",
-        "result": "Le fichier exporté doit contenir les colonnes suivantes: Référence, Demandeur, Objet, Produit, Traitée, Responsable de traitement, Date de traitement, Rapport de traitement, Date Demande, Processus, Activité, Direction, Service."
-      },
-      {
-        "action": "Vérifier le contenu des colonnes Produit, Responsable de traitement, Date de traitement et Rapport de traitement pour une non-conformité simplifiée.",
-        "data": "",
-        "result": "Les colonnes Produit, Responsable de traitement, Date de traitement et Rapport de traitement doivent contenir les informations correctes associées à la non-conformité."
+        "result": "L'identifiant est pré-rempli ou la session est maintenue (selon implémentation)."
       }
     ],
-    "xray_test_repository_folder": "Partie Interessé/US-2524-Spécifications fonctionnelles de CDC module PIP pour le compte du client euro-information"
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Vérification de la transmission sécurisée (HTTPS)",
+      "description": "Objectif : S'assurer que les données transitent via HTTPS.\nPréconditions : Accès à la page de login."
+    },
+    "steps": [
+      {
+        "action": "Vérifier l'URL dans la barre d'adresse",
+        "data": "",
+        "result": "L'URL commence par https:// et le certificat est valide."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Sensibilité à la casse pour le mot de passe",
+      "description": "Objectif : Vérifier que le mot de passe respecte la casse.\nPréconditions : Mot de passe configuré comme 'MonPass123'."
+    },
+    "steps": [
+      {
+        "action": "Saisir l'email et le mot de passe en minuscules",
+        "data": "monpass123",
+        "result": "L'authentification échoue (identifiants incorrects)."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Gestion des espaces inutiles dans le champ Email",
+      "description": "Objectif : Vérifier que les espaces avant/après l'email sont ignorés (trim).\nPréconditions : Email 'user@test.com' en base."
+    },
+    "steps": [
+      {
+        "action": "Saisir l'email avec des espaces au début et à la fin",
+        "data": "  user@test.com  ",
+        "result": "L'authentification réussit."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Vérification du masquage des caractères du mot de passe",
+      "description": "Objectif : S'assurer que le mot de passe n'est pas affiché en clair à l'écran.\nPréconditions : Saisie de données."
+    },
+    "steps": [
+      {
+        "action": "Saisir des caractères dans le champ mot de passe",
+        "data": "secret123",
+        "result": "Les caractères sont remplacés par des points ou des astérisques."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Tentative de connexion avec un compte désactivé",
+      "description": "Objectif : Vérifier qu'un compte inactif ne peut pas se connecter.\nPréconditions : Compte marqué comme 'Inactif' en base."
+    },
+    "steps": [
+      {
+        "action": "Saisir les identifiants d'un compte désactivé",
+        "data": "inactive@test.com",
+        "result": "Message d'erreur indiquant que le compte est désactivé ou identifiants incorrects."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Sécurité : Prévention contre l'injection SQL basique",
+      "description": "Objectif : Vérifier la robustesse des champs.\nPréconditions : Page login."
+    },
+    "steps": [
+      {
+        "action": "Saisir une chaîne d'injection dans le champ email",
+        "data": "' OR 1=1 --",
+        "result": "Le système refuse la connexion et ne plante pas."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Vérification de l'ordre de tabulation des champs",
+      "description": "Objectif : Vérifier l'ergonomie clavier.\nPréconditions : Focus sur le premier champ."
+    },
+    "steps": [
+      {
+        "action": "Appuyer sur la touche 'Tab' successivement",
+        "data": "Clavier",
+        "result": "Le focus passe de Email à Mot de passe, puis au bouton Se connecter."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Validation d'un format d'email invalide",
+      "description": "Objectif : Vérifier le contrôle de surface sur l'email.\nPréconditions : Saisie utilisateur."
+    },
+    "steps": [
+      {
+        "action": "Saisir une chaîne sans format d'email",
+        "data": "notanemail",
+        "result": "Le système affiche une erreur de format d'email (si validation front-end présente)."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Soumission via la touche Entrée",
+      "description": "Objectif : Vérifier que la touche Entrée valide le formulaire.\nPréconditions : Identifiants saisis."
+    },
+    "steps": [
+      {
+        "action": "Appuyer sur 'Entrée' après avoir saisi le mot de passe",
+        "data": "Clavier",
+        "result": "Le formulaire est soumis et l'utilisateur est connecté."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Vérification de l'absence de sensibilité à la casse pour l'Email",
+      "description": "Objectif : Vérifier que l'email peut être saisi en majuscules.\nPréconditions : Compte 'user@test.com' existant."
+    },
+    "steps": [
+      {
+        "action": "Saisir l'email en majuscules",
+        "data": "USER@TEST.COM",
+        "result": "L'authentification réussit."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Affichage des messages d'erreur lors d'une déconnexion réseau",
+      "description": "Objectif : Vérifier le comportement en cas de perte de connexion.\nPréconditions : Couper le réseau après chargement de la page."
+    },
+    "steps": [
+      {
+        "action": "Cliquer sur 'Se connecter' sans internet",
+        "data": "Off-line",
+        "result": "Message d'erreur indiquant un problème de connexion au serveur."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Persistance de la session après rafraîchissement",
+      "description": "Objectif : Vérifier que la session reste active.\nPréconditions : Utilisateur connecté."
+    },
+    "steps": [
+      {
+        "action": "Rafraîchir la page (F5) après être connecté",
+        "data": "",
+        "result": "L'utilisateur reste sur son espace personnel sans avoir à se reconnecter."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
   }
 ]

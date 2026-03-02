@@ -363,6 +363,26 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+// ✅ CORRECT - global function
+function jiraXrayUrl() {
+    fetch('/import-xray', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+        } else if (data.error) {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(err => console.error('Request failed:', err));
+}
+
+
+
+
 //document.getElementById('importBtn').addEventListener('click', () => {
 //    fetch('/import-xray', {
 //        method: 'POST'
