@@ -3,8 +3,10 @@ Main Routes for Flask App
 """
 import re
 from functools import wraps
+from pathlib import Path
 
-from flask import Blueprint, render_template, redirect, session, url_for, request, jsonify, current_app, abort
+from flask import Blueprint, render_template, redirect, session, url_for, request, jsonify, current_app, abort, \
+    send_file
 from flask_app.models import AgentSettings, JiraXraySettings, APIKey, User
 
 import google.generativeai as genai
@@ -919,3 +921,109 @@ def api_delete_user(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
+# ── Config ──────────────────────────────────────────────────────────────────
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # ← add one more .parent
+
+AGENT_HISTORY_DIR = Path(os.getenv(
+    "AGENT_HISTORY_DIR",
+    str(BASE_DIR / "tmp" / "agent_history")
+))
+# ── Helper ───────────────────────────────────────────────────────────────────
+def _scan_executions() -> list[dict]:
+    """
+    Scans AGENT_HISTORY_DIR and returns a list of execution metadata dicts,
+    sorted newest-first (by folder mtime).
+    """
+    if not AGENT_HISTORY_DIR.exists():
+        return []
+
+    executions = []
+    for folder in sorted(AGENT_HISTORY_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+        if not folder.is_dir():
+            continue
+        exec_id = folder.name
+        json_path = folder / f"{exec_id}.json"
+        gif_path  = folder / f"{exec_id}.gif"
+
+        executions.append({
+            "id":       exec_id,
+            "has_json": json_path.exists(),
+            "has_gif":  gif_path.exists(),
+            "mtime":    folder.stat().st_mtime,
+        })
+
+    return executions
+
+
+# ── Routes ───────────────────────────────────────────────────────────────────
+
+@main_bp.route("/api/agent-history", methods=["GET"])
+@login_required
+def list_executions():
+    """Return the list of all execution IDs with availability flags."""
+    executions = _scan_executions()
+    return jsonify({"executions": executions, "total": len(executions)})
+
+
+@main_bp.route("/api/agent-history/<exec_id>/json", methods=["GET"])
+@login_required
+def get_execution_json(exec_id: str):
+    """Return the JSON report for a given execution ID."""
+    safe_id = Path(exec_id).name
+    json_path = AGENT_HISTORY_DIR / safe_id / f"{safe_id}.json"
+
+    if not json_path.exists():
+        abort(404, description=f"No JSON found for execution {safe_id}")
+
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        abort(500, description=f"Invalid JSON: {e}")
+
+    return jsonify(data)
+
+
+@main_bp.route("/api/agent-history/<exec_id>/gif", methods=["GET"])
+@login_required
+def get_execution_gif(exec_id: str):
+    """Stream the GIF recording for a given execution ID."""
+    safe_id = Path(exec_id).name
+    gif_path = AGENT_HISTORY_DIR / safe_id / f"{safe_id}.gif"
+
+    if not gif_path.exists():
+        abort(404, description=f"No GIF found for execution {safe_id}")
+
+    return send_file(str(gif_path), mimetype="image/gif")
+
+
+# ── DEBUG route (remove after fixing) ────────────────────────────────────────
+@main_bp.route("/api/agent-history/debug", methods=["GET"])
+def debug_history():
+    """Debug route to check path and files — remove once working."""
+    result = {
+        "configured_path": str(AGENT_HISTORY_DIR),
+        "base_dir": str(BASE_DIR),
+        "exists": AGENT_HISTORY_DIR.exists(),
+        "folders": []
+    }
+
+    if AGENT_HISTORY_DIR.exists():
+        for folder in AGENT_HISTORY_DIR.iterdir():
+            files = [f.name for f in folder.iterdir()] if folder.is_dir() else []
+            result["folders"].append({
+                "name": folder.name,
+                "is_dir": folder.is_dir(),
+                "files": files
+            })
+
+    return jsonify(result)
+
+
+
+
+
+
+
+
+

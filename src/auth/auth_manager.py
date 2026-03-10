@@ -340,9 +340,6 @@ class AuthManager:
         return None
 
     def save_agent_setting(self, user_id: int, setting_name: str, settings: Dict[str, Any]) -> Dict[str, Any]:
-        if not self.is_authenticated():
-            return {"success": False, "error": "Not authenticated"}
-
         if not setting_name or not setting_name.strip():
             return {"success": False, "error": "Setting name is required"}
 
