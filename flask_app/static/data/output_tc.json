@@ -10,24 +10,60 @@
           "name": "v1"
         }
       ],
-      "summary": "Authentification réussie avec des identifiants valides (Email)",
-      "description": "Objectif : Vérifier qu'un utilisateur peut se connecter avec un email et un mot de passe valides.\nPréconditions : Compte actif existant dans la base de données."
+      "summary": "Création d'un utilisateur valide par un administrateur",
+      "description": "Objectif : Vérifier qu'un administrateur peut créer un compte utilisateur avec des données valides.\nPréconditions : L'utilisateur est connecté avec le rôle 'Admin'."
     },
     "steps": [
       {
-        "action": "Saisir un email valide dans le champ 'Email / Username'",
-        "data": "user@example.com",
-        "result": "L'email est saisi."
+        "action": "Accéder à la page de gestion des utilisateurs et cliquer sur 'Ajouter'.",
+        "data": "Nom: Jean Dupont, Email: jean.dupont@example.com, Rôle: User, Password: Password123!",
+        "result": "Le compte est créé avec succès et un message de confirmation s'affiche."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
       },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Création d'un utilisateur avec un email déjà existant",
+      "description": "Objectif : Vérifier que le système empêche la création de doublons par email.\nPréconditions : Un utilisateur avec l'email 'existant@test.com' existe déjà."
+    },
+    "steps": [
       {
-        "action": "Saisir le mot de passe correspondant",
-        "data": "Password123!",
-        "result": "Le mot de passe est masqué."
+        "action": "Tenter de créer un utilisateur avec l'email 'existant@test.com'.",
+        "data": "Email: existant@test.com",
+        "result": "Le système affiche une erreur indiquant que l'email est déjà utilisé."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
       },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Affichage de la liste complète des utilisateurs",
+      "description": "Objectif : Vérifier que l'administrateur peut voir tous les comptes.\nPréconditions : Des utilisateurs existent dans la base de données."
+    },
+    "steps": [
       {
-        "action": "Cliquer sur le bouton 'Se connecter'",
+        "action": "Accéder à la liste des utilisateurs.",
         "data": "",
-        "result": "L'utilisateur est redirigé vers son espace personnel."
+        "result": "La liste affiche tous les utilisateurs avec leur nom, email et rôle."
       }
     ],
     "xray_test_repository_folder": "DEV"
@@ -43,19 +79,14 @@
           "name": "v1"
         }
       ],
-      "summary": "Authentification réussie avec un nom d'utilisateur (Username)",
-      "description": "Objectif : Vérifier la connexion via le pseudo au lieu de l'email.\nPréconditions : Compte avec pseudo 'testuser' existant."
+      "summary": "Recherche d'un utilisateur par nom",
+      "description": "Objectif : Vérifier le fonctionnement de la recherche par nom.\nPréconditions : Un utilisateur nommé 'Alice' existe."
     },
     "steps": [
       {
-        "action": "Saisir le nom d'utilisateur dans le champ 'Email / Username'",
-        "data": "testuser",
-        "result": "Le nom d'utilisateur est saisi."
-      },
-      {
-        "action": "Saisir le mot de passe valide et cliquer sur 'Se connecter'",
-        "data": "Password123!",
-        "result": "Connexion réussie, accès à l'espace personnel."
+        "action": "Saisir 'Alice' dans la barre de recherche.",
+        "data": "Alice",
+        "result": "Seuls les utilisateurs dont le nom contient 'Alice' sont affichés."
       }
     ],
     "xray_test_repository_folder": "DEV"
@@ -71,14 +102,14 @@
           "name": "v1"
         }
       ],
-      "summary": "Échec d'authentification avec un mot de passe incorrect",
-      "description": "Objectif : Vérifier le message d'erreur en cas de mauvais mot de passe.\nPréconditions : Email valide existant."
+      "summary": "Filtrage des utilisateurs par rôle",
+      "description": "Objectif : Vérifier que le filtre par rôle fonctionne correctement.\nPréconditions : Plusieurs utilisateurs avec des rôles 'Admin' et 'User' existent."
     },
     "steps": [
       {
-        "action": "Saisir un email valide et un mot de passe erroné",
-        "data": "user@example.com / wrongpass",
-        "result": "Message d'erreur : Identifiants incorrects."
+        "action": "Sélectionner le filtre 'Admin'.",
+        "data": "Rôle: Admin",
+        "result": "La liste ne contient plus que les utilisateurs ayant le rôle Admin."
       }
     ],
     "xray_test_repository_folder": "DEV"
@@ -94,19 +125,129 @@
           "name": "v1"
         }
       ],
-      "summary": "Validation du champ Email obligatoire",
-      "description": "Objectif : Vérifier qu'on ne peut pas se connecter sans email.\nPréconditions : Page de login affichée."
+      "summary": "Mise à jour du nom et du rôle d'un utilisateur",
+      "description": "Objectif : Vérifier qu'un administrateur peut modifier les détails d'un compte.\nPréconditions : Un utilisateur 'Test User' existe."
     },
     "steps": [
       {
-        "action": "Laisser le champ 'Email' vide et saisir un mot de passe",
-        "data": "Password123!",
-        "result": "Un message indique que le champ Email est obligatoire."
+        "action": "Modifier le nom en 'User Updated' et le rôle en 'Admin'.",
+        "data": "Nouveau nom: User Updated, Nouveau rôle: Admin",
+        "result": "Les modifications sont enregistrées et visibles dans la liste."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
       },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Mise à jour vers un email déjà utilisé",
+      "description": "Objectif : Vérifier que l'unicité de l'email est contrôlée lors d'une modification.\nPréconditions : user1@test.com et user2@test.com existent."
+    },
+    "steps": [
       {
-        "action": "Cliquer sur 'Se connecter'",
+        "action": "Modifier l'email de user1 vers 'user2@test.com'.",
+        "data": "Email: user2@test.com",
+        "result": "Une erreur d'unicité s'affiche, la modification est rejetée."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Suppression d'un utilisateur avec confirmation",
+      "description": "Objectif : Vérifier le processus de suppression sécurisé.\nPréconditions : Un utilisateur 'ASupprimer' existe."
+    },
+    "steps": [
+      {
+        "action": "Cliquer sur supprimer, puis confirmer l'action dans la fenêtre de dialogue.",
+        "data": "Confirmer: OUI",
+        "result": "L'utilisateur est retiré de la base et n'apparaît plus dans la liste."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Annulation de la suppression d'un utilisateur",
+      "description": "Objectif : Vérifier que l'utilisateur n'est pas supprimé si on annule la confirmation.\nPréconditions : Un utilisateur 'AConserver' existe."
+    },
+    "steps": [
+      {
+        "action": "Cliquer sur supprimer, puis choisir 'Annuler'.",
+        "data": "Confirmer: NON",
+        "result": "L'utilisateur est toujours présent dans la liste."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Accès interdit à la gestion pour un utilisateur non-admin",
+      "description": "Objectif : Vérifier la restriction d'accès basée sur le rôle.\nPréconditions : Connecté en tant que 'User' standard."
+    },
+    "steps": [
+      {
+        "action": "Tenter d'accéder à l'URL de gestion des comptes.",
+        "data": "/admin/users",
+        "result": "Accès refusé ou redirection vers la page d'accueil."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Vérification des logs lors de la création",
+      "description": "Objectif : Vérifier que l'action de création est auditée.\nPréconditions : Un administrateur crée un utilisateur."
+    },
+    "steps": [
+      {
+        "action": "Consulter les logs d'audit après une création.",
         "data": "",
-        "result": "La soumission est bloquée."
+        "result": "Une entrée indique la création du compte avec la date et l'auteur (Admin)."
       }
     ],
     "xray_test_repository_folder": "DEV"
@@ -122,65 +263,14 @@
           "name": "v1"
         }
       ],
-      "summary": "Validation du champ Mot de passe obligatoire",
-      "description": "Objectif : Vérifier qu'on ne peut pas se connecter sans mot de passe.\nPréconditions : Page de login affichée."
+      "summary": "Vérification des logs lors de la suppression",
+      "description": "Objectif : Vérifier que la suppression est auditée comme exigé.\nPréconditions : Un administrateur supprime un utilisateur."
     },
     "steps": [
       {
-        "action": "Saisir un email et laisser le mot de passe vide",
-        "data": "user@example.com",
-        "result": "Un message indique que le champ Mot de passe est obligatoire."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Blocage du compte après 5 tentatives échouées",
-      "description": "Objectif : Vérifier la règle métier de sécurité sur le blocage temporaire.\nPréconditions : Compte utilisateur valide existant."
-    },
-    "steps": [
-      {
-        "action": "Effectuer 5 tentatives de connexion avec un mot de passe erroné",
-        "data": "5 tentatives",
-        "result": "Le compte est marqué comme temporairement bloqué."
-      },
-      {
-        "action": "Effectuer une 6ème tentative avec les bons identifiants",
-        "data": "user@example.com / Password123!",
-        "result": "Message d'erreur indiquant que le compte est bloqué."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Accès à la récupération de mot de passe",
-      "description": "Objectif : Vérifier le lien 'Mot de passe oublié ?'.\nPréconditions : Page de login affichée."
-    },
-    "steps": [
-      {
-        "action": "Cliquer sur le lien 'Mot de passe oublié ?'",
+        "action": "Consulter les logs d'audit après une suppression.",
         "data": "",
-        "result": "L'utilisateur est redirigé vers la page de récupération du mot de passe."
+        "result": "Une entrée indique la suppression de l'utilisateur concerné."
       }
     ],
     "xray_test_repository_folder": "DEV"
@@ -196,19 +286,106 @@
           "name": "v1"
         }
       ],
-      "summary": "Vérification de l'option 'Se souvenir de moi'",
-      "description": "Objectif : Vérifier que l'option peut être cochée.\nPréconditions : Page de login affichée."
+      "summary": "Création d'utilisateur avec champs vides",
+      "description": "Objectif : Vérifier la validation des champs obligatoires.\nPréconditions : Formulaire de création ouvert."
     },
     "steps": [
       {
-        "action": "Cocher la case 'Se souvenir de moi' avant de se connecter",
+        "action": "Cliquer sur 'Enregistrer' sans remplir les champs.",
         "data": "",
-        "result": "La case est cochée."
+        "result": "Le système affiche des erreurs pour chaque champ obligatoire manquant."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
       },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Validation du format de l'email à la création",
+      "description": "Objectif : Vérifier que l'email doit respecter un format standard.\nPréconditions : L'Admin remplit le formulaire."
+    },
+    "steps": [
       {
-        "action": "Se connecter et fermer le navigateur, puis revenir",
+        "action": "Saisir un email invalide 'test.com' (sans @).",
+        "data": "Email: test.com",
+        "result": "Le système affiche une erreur de format d'email."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Changement de mot de passe utilisateur",
+      "description": "Objectif : Vérifier que l'admin peut mettre à jour le mot de passe d'un utilisateur.\nPréconditions : Accès à l'édition d'un utilisateur existant."
+    },
+    "steps": [
+      {
+        "action": "Saisir un nouveau mot de passe et enregistrer.",
+        "data": "Password: NewPassword2024!",
+        "result": "Le mot de passe est mis à jour (vérifiable par une tentative de connexion)."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Recherche d'un utilisateur par email",
+      "description": "Objectif : Vérifier la recherche par adresse email.\nPréconditions : Un utilisateur avec l'email 'search@test.com' existe."
+    },
+    "steps": [
+      {
+        "action": "Saisir 'search@test.com' dans la barre de recherche.",
+        "data": "search@test.com",
+        "result": "L'utilisateur correspondant s'affiche seul dans la liste."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Vérification des logs lors d'une mise à jour",
+      "description": "Objectif : Vérifier que toute modification est logguée pour l'audit.\nPréconditions : Un Admin modifie un rôle utilisateur."
+    },
+    "steps": [
+      {
+        "action": "Modifier le rôle d'un utilisateur et vérifier les logs.",
         "data": "",
-        "result": "L'identifiant est pré-rempli ou la session est maintenue (selon implémentation)."
+        "result": "Le log affiche l'action 'Update' avec les détails de la modification."
       }
     ],
     "xray_test_repository_folder": "DEV"
@@ -224,267 +401,60 @@
           "name": "v1"
         }
       ],
-      "summary": "Vérification de la transmission sécurisée (HTTPS)",
-      "description": "Objectif : S'assurer que les données transitent via HTTPS.\nPréconditions : Accès à la page de login."
+      "summary": "Recherche d'un utilisateur inexistant",
+      "description": "Objectif : Vérifier le comportement du système lors d'une recherche sans résultat.\nPréconditions : Aucune."
     },
     "steps": [
       {
-        "action": "Vérifier l'URL dans la barre d'adresse",
+        "action": "Rechercher un nom aléatoire 'ZXYWV'.",
+        "data": "ZXYWV",
+        "result": "Un message 'Aucun utilisateur trouvé' s'affiche."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Validation de la longueur minimale du mot de passe",
+      "description": "Objectif : Vérifier les contraintes de sécurité sur le mot de passe.\nPréconditions : Création d'un nouvel utilisateur."
+    },
+    "steps": [
+      {
+        "action": "Saisir un mot de passe très court (ex: 123).",
+        "data": "Password: 123",
+        "result": "Le système rejette la création pour mot de passe trop court/faible."
+      }
+    ],
+    "xray_test_repository_folder": "DEV"
+  },
+  {
+    "testtype": "Manual",
+    "fields": {
+      "project": {
+        "key": "DEV"
+      },
+      "fixVersions": [
+        {
+          "name": "v1"
+        }
+      ],
+      "summary": "Persistance des données après modification",
+      "description": "Objectif : Vérifier que les changements sont bien enregistrés en base.\nPréconditions : Admin modifie un utilisateur."
+    },
+    "steps": [
+      {
+        "action": "Modifier un utilisateur, se déconnecter, se reconnecter et vérifier l'utilisateur.",
         "data": "",
-        "result": "L'URL commence par https:// et le certificat est valide."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Sensibilité à la casse pour le mot de passe",
-      "description": "Objectif : Vérifier que le mot de passe respecte la casse.\nPréconditions : Mot de passe configuré comme 'MonPass123'."
-    },
-    "steps": [
-      {
-        "action": "Saisir l'email et le mot de passe en minuscules",
-        "data": "monpass123",
-        "result": "L'authentification échoue (identifiants incorrects)."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Gestion des espaces inutiles dans le champ Email",
-      "description": "Objectif : Vérifier que les espaces avant/après l'email sont ignorés (trim).\nPréconditions : Email 'user@test.com' en base."
-    },
-    "steps": [
-      {
-        "action": "Saisir l'email avec des espaces au début et à la fin",
-        "data": "  user@test.com  ",
-        "result": "L'authentification réussit."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Vérification du masquage des caractères du mot de passe",
-      "description": "Objectif : S'assurer que le mot de passe n'est pas affiché en clair à l'écran.\nPréconditions : Saisie de données."
-    },
-    "steps": [
-      {
-        "action": "Saisir des caractères dans le champ mot de passe",
-        "data": "secret123",
-        "result": "Les caractères sont remplacés par des points ou des astérisques."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Tentative de connexion avec un compte désactivé",
-      "description": "Objectif : Vérifier qu'un compte inactif ne peut pas se connecter.\nPréconditions : Compte marqué comme 'Inactif' en base."
-    },
-    "steps": [
-      {
-        "action": "Saisir les identifiants d'un compte désactivé",
-        "data": "inactive@test.com",
-        "result": "Message d'erreur indiquant que le compte est désactivé ou identifiants incorrects."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Sécurité : Prévention contre l'injection SQL basique",
-      "description": "Objectif : Vérifier la robustesse des champs.\nPréconditions : Page login."
-    },
-    "steps": [
-      {
-        "action": "Saisir une chaîne d'injection dans le champ email",
-        "data": "' OR 1=1 --",
-        "result": "Le système refuse la connexion et ne plante pas."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Vérification de l'ordre de tabulation des champs",
-      "description": "Objectif : Vérifier l'ergonomie clavier.\nPréconditions : Focus sur le premier champ."
-    },
-    "steps": [
-      {
-        "action": "Appuyer sur la touche 'Tab' successivement",
-        "data": "Clavier",
-        "result": "Le focus passe de Email à Mot de passe, puis au bouton Se connecter."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Validation d'un format d'email invalide",
-      "description": "Objectif : Vérifier le contrôle de surface sur l'email.\nPréconditions : Saisie utilisateur."
-    },
-    "steps": [
-      {
-        "action": "Saisir une chaîne sans format d'email",
-        "data": "notanemail",
-        "result": "Le système affiche une erreur de format d'email (si validation front-end présente)."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Soumission via la touche Entrée",
-      "description": "Objectif : Vérifier que la touche Entrée valide le formulaire.\nPréconditions : Identifiants saisis."
-    },
-    "steps": [
-      {
-        "action": "Appuyer sur 'Entrée' après avoir saisi le mot de passe",
-        "data": "Clavier",
-        "result": "Le formulaire est soumis et l'utilisateur est connecté."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Vérification de l'absence de sensibilité à la casse pour l'Email",
-      "description": "Objectif : Vérifier que l'email peut être saisi en majuscules.\nPréconditions : Compte 'user@test.com' existant."
-    },
-    "steps": [
-      {
-        "action": "Saisir l'email en majuscules",
-        "data": "USER@TEST.COM",
-        "result": "L'authentification réussit."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Affichage des messages d'erreur lors d'une déconnexion réseau",
-      "description": "Objectif : Vérifier le comportement en cas de perte de connexion.\nPréconditions : Couper le réseau après chargement de la page."
-    },
-    "steps": [
-      {
-        "action": "Cliquer sur 'Se connecter' sans internet",
-        "data": "Off-line",
-        "result": "Message d'erreur indiquant un problème de connexion au serveur."
-      }
-    ],
-    "xray_test_repository_folder": "DEV"
-  },
-  {
-    "testtype": "Manual",
-    "fields": {
-      "project": {
-        "key": "DEV"
-      },
-      "fixVersions": [
-        {
-          "name": "v1"
-        }
-      ],
-      "summary": "Persistance de la session après rafraîchissement",
-      "description": "Objectif : Vérifier que la session reste active.\nPréconditions : Utilisateur connecté."
-    },
-    "steps": [
-      {
-        "action": "Rafraîchir la page (F5) après être connecté",
-        "data": "",
-        "result": "L'utilisateur reste sur son espace personnel sans avoir à se reconnecter."
+        "result": "Les informations modifiées sont toujours présentes après reconnexion."
       }
     ],
     "xray_test_repository_folder": "DEV"

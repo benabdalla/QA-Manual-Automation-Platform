@@ -7,6 +7,8 @@ from pathlib import Path
 
 from flask import Blueprint, render_template, redirect, session, url_for, request, jsonify, current_app, abort, \
     send_file
+from sqlalchemy.exc import IntegrityError
+
 from flask_app.models import AgentSettings, JiraXraySettings, APIKey, User
 
 import google.generativeai as genai
@@ -479,6 +481,87 @@ def generate():
 
     return render_template("main/index.html", result=result)
 
+@main_bp.route('/api/jira-xray-settings/deactivate-all', methods=['POST'])
+@login_required
+def deactivate_all_jira_xray_settings():
+    """
+    Set is_active = False for ALL settings of the current user.
+    Optionally exclude one record (the one being saved right now).
+    Only touches rows where user_id = current_user.id — never other users.
+    """
+    try:
+        data       = request.get_json() or {}
+        exclude_id = data.get('exclude_id')  # ID of the setting being saved — skip it
+
+        # Base query: only current user's settings
+        query = JiraXraySettings.query.filter(
+            JiraXraySettings.user_id == current_user.id
+        )
+
+        # Exclude the record currently being edited/created
+        if exclude_id:
+            query = query.filter(JiraXraySettings.id != int(exclude_id))
+
+        # Single UPDATE statement — set all matching rows to inactive
+        updated_count = query.update(
+            {
+                'is_active':  False,
+                'updated_at': datetime.utcnow()
+            },
+            synchronize_session=False
+        )
+
+        db.session.commit()
+
+        return jsonify({
+            'success':     True,
+            'deactivated': updated_count,
+            'message':     f'{updated_count} setting(s) set to inactive for user {current_user.id}.'
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error':   str(e)
+        }), 500
+
+@main_bp.route('/api/api-keys/deactivate-all', methods=['POST'])
+@login_required
+def deactivate_all_api_keys():
+    """
+    Set is_active = False for ALL api keys of current_user.
+    Optionally skip one record via exclude_id.
+
+    Called:
+      1. After adding a new key  → exclude_id = new key's id  (protect the new one)
+      2. After editing a key     → exclude_id = that key's id (protect the edited one)
+    """
+    try:
+        data       = request.get_json() or {}
+        exclude_id = data.get('exclude_id')
+
+        query = APIKey.query.filter(APIKey.user_id == current_user.id)
+
+        if exclude_id:
+            query = query.filter(APIKey.id != int(exclude_id))
+
+        updated_count = query.update(
+            {'is_active': False},   # no updated_at — not a column on ApiKey
+            synchronize_session=False
+        )
+
+        db.session.commit()
+
+        return jsonify({
+            'success':     True,
+            'deactivated': updated_count
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @main_bp.route('/save_tests', methods=['POST'])
 @login_required
@@ -610,7 +693,6 @@ def create_api_key():
     if not key_value: return jsonify({"success": False, "error": "key_value is required"}), 400
 
     try:
-        # ✅ Use ORM insert — works on PostgreSQL, MySQL, and SQLite
         new_key = APIKey(
             user_id    = current_user.id,
             key_name   = key_name,
@@ -618,20 +700,21 @@ def create_api_key():
             key_type   = key_type,
             is_active  = is_active,
             created_at = datetime.utcnow(),
-            last_used = datetime.utcnow()
-
-
-
+            last_used  = datetime.utcnow()
         )
         db.session.add(new_key)
-        db.session.commit()          # ✅ commit first
-        new_id = new_key.id          # ✅ read ID after commit (ORM populates it)
+        db.session.commit()
+        new_id = new_key.id
 
         return jsonify({
             "success": True,
             "message": "API key created",
             "id":      new_id
         }), 201
+
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"success": False, "error": "This API key already exists. Please use a different key."}), 409
 
     except Exception as e:
         db.session.rollback()

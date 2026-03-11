@@ -27,8 +27,7 @@
                         <label for="agentSelect" class="form-label">
                             <i class="fas fa-robot"></i> Select Agent (from setting_agent table)
                         </label>
-                        <!-- This dropdown will be populated with all setting_agent for the current user -->
-                           <select id="agentSelect" class="form-select" onchange="loadAgentDetails()">
+                        <select id="agentSelect" class="form-select" onchange="loadAgentDetails()">
                             <option value="">-- Select an agent from database --</option>
                         </select>
                         <small class="text-muted">Select an agent from your setting_agent table to auto-populate model and API key</small>
@@ -95,19 +94,74 @@
         <!-- Middle Column - Prompt -->
         <div class="col-lg-8">
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-info text-white">
+                <div class="card-header bg-info text-white d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <h5 class="mb-0"><i class="fas fa-edit"></i> Test Scenario / Gherkin Format</h5>
+                    <!-- Toggle Buttons -->
+                    <div class="btn-group btn-group-sm" role="group" id="inputModeToggle">
+                        <button type="button" class="btn btn-light active" id="writeModeBtn" onclick="switchMode('write')">
+                            <i class="fas fa-pencil-alt"></i> Write
+                        </button>
+                        <button type="button" class="btn btn-outline-light" id="uploadModeBtn" onclick="switchMode('upload')">
+                            <i class="fas fa-upload"></i> Upload .feature
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <textarea 
-                        id="promptTextarea" 
-                        class="form-control" 
-                        rows="12" 
-                        placeholder="Describe your test scenario in Gherkin format or natural language...&#10;&#10;Example (Gherkin):&#10;Given I am on the login page&#10;When I enter valid credentials&#10;And I click the login button&#10;Then I should see the dashboard&#10;And the user profile should be displayed&#10;&#10;Or in natural language:&#10;Create a test that logs into the application, navigates to the dashboard, and verifies that the user profile is displayed correctly.">
-                    </textarea>
-                    <small class="text-muted d-block mt-2">
-                        <i class="fas fa-info-circle"></i> Use Gherkin format (Given/When/Then) or natural language. Be as detailed as possible for better code generation.
-                    </small>
+
+                    <!-- WRITE MODE -->
+                    <div id="writeModePanel">
+                        <textarea
+                            id="promptTextarea"
+                            class="form-control"
+                            rows="12"
+                            placeholder="Describe your test scenario in Gherkin format or natural language...&#10;&#10;Example (Gherkin):&#10;Given I am on the login page&#10;When I enter valid credentials&#10;And I click the login button&#10;Then I should see the dashboard&#10;And the user profile should be displayed&#10;&#10;Or in natural language:&#10;Create a test that logs into the application, navigates to the dashboard, and verifies that the user profile is displayed correctly.">
+                        </textarea>
+                        <small class="text-muted d-block mt-2">
+                            <i class="fas fa-info-circle"></i> Use Gherkin format (Given/When/Then) or natural language. Be as detailed as possible for better code generation.
+                        </small>
+                    </div>
+
+                    <!-- UPLOAD MODE -->
+                    <div id="uploadModePanel" style="display: none;">
+                        <!-- Drop Zone -->
+                        <div id="dropZone"
+                             class="border border-2 rounded text-center p-5"
+                             style="border-style: dashed !important; border-color: #0dcaf0 !important; background: #f0fdff; cursor: pointer; transition: all 0.2s;"
+                             onclick="document.getElementById('featureFileInput').click()"
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(event)"
+                             ondrop="handleDrop(event)">
+                            <i class="fas fa-file-upload fa-3x text-info mb-3 d-block"></i>
+                            <p class="mb-1 fw-semibold text-info">Click to select or drag &amp; drop a <code>.feature</code> file</p>
+                            <small class="text-muted">Gherkin feature files only (.feature)</small>
+                            <input type="file" id="featureFileInput" accept=".feature" style="display: none;" onchange="handleFileSelect(event)">
+                        </div>
+
+                        <!-- File Preview (shown after upload) -->
+                        <div id="filePreview" style="display: none;" class="mt-3">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <i class="fas fa-file-code text-success me-1"></i>
+                                    <strong id="uploadedFileName"></strong>
+                                    <span class="badge bg-success ms-2">Loaded</span>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" onclick="clearUploadedFile()">
+                                    <i class="fas fa-times"></i> Remove
+                                </button>
+                            </div>
+                            <textarea
+                                id="uploadedFileContent"
+                                class="form-control font-monospace"
+                                rows="10"
+                                readonly
+                                style="background: #f8f9fa; font-size: 0.85rem; border: 1px solid #ced4da;">
+                            </textarea>
+                            <small class="text-muted d-block mt-1">
+                                <i class="fas fa-check-circle text-success"></i> File content loaded and ready for code generation.
+                            </small>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -155,7 +209,6 @@
                     <div class="mb-2">
                         <span class="badge bg-primary">Framework: <span id="resultFramework"></span></span>
                         <span class="badge bg-info ms-2">Language: <span id="resultLanguage"></span></span>
-                        <span class="badge bg-secondary ms-2">Model: <span id="resultModel"></span></span>
                     </div>
                     <pre id="generatedCodeBlock" style="max-height: 500px; overflow-y: auto;"><code></code></pre>
                 </div>
@@ -218,10 +271,31 @@
         width: 3rem;
         height: 3rem;
     }
+
+    /* Drop zone hover effect */
+    #dropZone:hover {
+        background: #d0f5ff !important;
+        border-color: #0d6efd !important;
+    }
+
+    #dropZone.drag-over {
+        background: #d0f5ff !important;
+        border-color: #0d6efd !important;
+        transform: scale(1.01);
+    }
+
+    /* Mode toggle active state */
+    #inputModeToggle .btn.active {
+        background-color: #fff;
+        color: #0dcaf0;
+        font-weight: 600;
+    }
 </style>
 
 <script>
-    // Language options based on framework
+    // ==========================================
+    // LANGUAGE OPTIONS
+    // ==========================================
     const languageOptions = {
         'cypress': ['TypeScript', 'JavaScript'],
         'playwright': ['Java', 'JavaScript', 'Python', 'C#'],
@@ -234,15 +308,102 @@
         'selenium': ['java', 'javascript', 'python', 'csharp']
     };
 
-    // Load initial data
+    // ==========================================
+    // INIT
+    // ==========================================
     document.addEventListener('DOMContentLoaded', function() {
         loadAgents();
         loadAgentSettings();
     });
 
+    // ==========================================
+    // WRITE / UPLOAD MODE TOGGLE
+    // ==========================================
+    let currentMode = 'write';
+
+    function switchMode(mode) {
+        currentMode = mode;
+        const writePanel = document.getElementById('writeModePanel');
+        const uploadPanel = document.getElementById('uploadModePanel');
+        const writeModeBtn = document.getElementById('writeModeBtn');
+        const uploadModeBtn = document.getElementById('uploadModeBtn');
+
+        if (mode === 'write') {
+            writePanel.style.display = 'block';
+            uploadPanel.style.display = 'none';
+            writeModeBtn.classList.add('active', 'btn-light');
+            writeModeBtn.classList.remove('btn-outline-light');
+            uploadModeBtn.classList.remove('active', 'btn-light');
+            uploadModeBtn.classList.add('btn-outline-light');
+        } else {
+            writePanel.style.display = 'none';
+            uploadPanel.style.display = 'block';
+            uploadModeBtn.classList.add('active', 'btn-light');
+            uploadModeBtn.classList.remove('btn-outline-light');
+            writeModeBtn.classList.remove('active', 'btn-light');
+            writeModeBtn.classList.add('btn-outline-light');
+        }
+    }
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) readFeatureFile(file);
+    }
+
+    function handleDragOver(event) {
+        event.preventDefault();
+        const dropZone = document.getElementById('dropZone');
+        dropZone.classList.add('drag-over');
+    }
+
+    function handleDragLeave(event) {
+        const dropZone = document.getElementById('dropZone');
+        dropZone.classList.remove('drag-over');
+    }
+
+    function handleDrop(event) {
+        event.preventDefault();
+        handleDragLeave(event);
+        const file = event.dataTransfer.files[0];
+        if (file && file.name.endsWith('.feature')) {
+            readFeatureFile(file);
+        } else {
+            showError('Please upload a valid .feature file');
+        }
+    }
+
+    function readFeatureFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+
+            // Show file name and preview
+            document.getElementById('uploadedFileName').textContent = file.name;
+            document.getElementById('uploadedFileContent').value = content;
+            document.getElementById('dropZone').style.display = 'none';
+            document.getElementById('filePreview').style.display = 'block';
+
+            // Sync content into promptTextarea so generateCode() works unchanged
+            document.getElementById('promptTextarea').value = content;
+        };
+        reader.onerror = () => showError('Failed to read file: ' + file.name);
+        reader.readAsText(file);
+    }
+
+    function clearUploadedFile() {
+        document.getElementById('uploadedFileName').textContent = '';
+        document.getElementById('uploadedFileContent').value = '';
+        document.getElementById('promptTextarea').value = '';
+        document.getElementById('featureFileInput').value = '';
+        document.getElementById('dropZone').style.display = 'block';
+        document.getElementById('filePreview').style.display = 'none';
+    }
+
+    // ==========================================
+    // AGENT LOADING
+    // ==========================================
     async function loadAgents() {
         try {
-            // Fetch all agents ordered by setting_name ASC
             const response = await fetch('/api/code-generator/agents?order_by=setting_name');
             const data = await response.json();
 
@@ -251,7 +412,6 @@
             agentSelect.innerHTML = '<option value="">-- Select an agent from database --</option>';
 
             if (data.success && data.agents && data.agents.length > 0) {
-                // Sort by name in JS as fallback if backend doesn't support order_by param
                 data.agents.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
                 data.agents.forEach(agent => {
                     const option = document.createElement('option');
@@ -262,7 +422,6 @@
                     option.dataset.apiKey = agent.llm_api_key || '';
                     agentSelect.appendChild(option);
                 });
-                // Auto-select the first agent
                 agentSelect.value = data.agents[0].id;
                 loadAgentDetails();
                 createTestAgentBtn.style.display = 'none';
@@ -277,34 +436,26 @@
 
     async function createTestAgent() {
         try {
-            console.log("Creating test agent...");
-            
             const createTestAgentBtn = document.getElementById('createTestAgentBtn');
             createTestAgentBtn.disabled = true;
             createTestAgentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
-            
+
             const response = await fetch('/api/code-generator/create-test-agent', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
-            
+
             const data = await response.json();
-            console.log("Test agent creation response:", data);
-            
+
             if (data.success) {
                 showError('✅ Test agent created! Reloading agents...');
-                setTimeout(() => {
-                    location.reload();
-                }, 2000);
+                setTimeout(() => { location.reload(); }, 2000);
             } else {
                 showError("Failed to create test agent: " + (data.error || "Unknown error"));
                 createTestAgentBtn.disabled = false;
                 createTestAgentBtn.innerHTML = '<i class="fas fa-plus"></i> Create Test Agent';
             }
         } catch (error) {
-            console.error('Error creating test agent:', error);
             showError('Failed to create test agent: ' + error.message);
             const createTestAgentBtn = document.getElementById('createTestAgentBtn');
             createTestAgentBtn.disabled = false;
@@ -316,10 +467,7 @@
         const agentSelect = document.getElementById('agentSelect');
         const agentId = agentSelect.value;
 
-        console.log("Loading agent details for ID:", agentId);
-
         if (!agentId) {
-            // Clear fields if no agent selected
             document.getElementById('modelSelect').innerHTML = '<option value="">Select a model...</option>';
             document.getElementById('apiKeyDisplay').value = '';
             document.getElementById('apiKeySelect').value = '';
@@ -330,25 +478,20 @@
             const response = await fetch(`/api/code-generator/agent/${agentId}`);
             const data = await response.json();
 
-            console.log("Agent details response:", data);
-
             if (data.success) {
                 const agent = data.agent;
-                
-                // Set model - clear and add new option
+
                 const modelSelect = document.getElementById('modelSelect');
                 modelSelect.innerHTML = '<option value="">Select a model...</option>';
-                
+
                 if (agent.llm_model_name) {
                     const modelOption = document.createElement('option');
                     modelOption.value = agent.llm_provider;
                     modelOption.textContent = agent.llm_model_name;
                     modelOption.selected = true;
                     modelSelect.appendChild(modelOption);
-                    console.log("Added model option:", agent.llm_model_name);
                 }
-                
-                // Set API key display - show masked key with provider
+
                 let apiKeyDisplay = '';
                 if (agent.llm_api_key) {
                     const keyLength = agent.llm_api_key.length;
@@ -357,21 +500,13 @@
                 } else {
                     apiKeyDisplay = `${agent.llm_provider}: Not set`;
                 }
-                
+
                 document.getElementById('apiKeyDisplay').value = apiKeyDisplay;
                 document.getElementById('apiKeySelect').value = agent.llm_api_key || '';
-                
-                console.log("Agent details loaded successfully", {
-                    provider: agent.llm_provider,
-                    model: agent.llm_model_name,
-                    hasApiKey: !!agent.llm_api_key
-                });
             } else {
-                console.error("API error:", data.error);
                 showError('Failed to load agent details: ' + (data.error || "Unknown error"));
             }
         } catch (error) {
-            console.error('Error loading agent details:', error);
             showError('Failed to load agent details: ' + error.message);
         }
     }
@@ -382,9 +517,8 @@
             const data = await response.json();
 
             if (data.success) {
-                // Populate model select (fallback for manual selection)
                 const modelSelect = document.getElementById('modelSelect');
-                if (modelSelect.options.length === 1) { // Only if not already populated
+                if (modelSelect.options.length === 1) {
                     data.agent_settings.forEach(setting => {
                         const option = document.createElement('option');
                         option.value = setting.llm_provider;
@@ -399,6 +533,9 @@
         }
     }
 
+    // ==========================================
+    // LANGUAGE UPDATE
+    // ==========================================
     function updateLanguages() {
         const framework = document.getElementById('frameworkSelect').value.toLowerCase();
         const languageSelect = document.getElementById('languageSelect');
@@ -419,141 +556,39 @@
         });
     }
 
-    async function createAgentAndGenerate() {
+    // ==========================================
+    // GENERATE CODE
+    // ==========================================
+    async function generateCode() {
         const frameworkSelect = document.getElementById('frameworkSelect');
         const languageSelect = document.getElementById('languageSelect');
         const promptTextarea = document.getElementById('promptTextarea');
         const modelSelect = document.getElementById('modelSelect');
+        const apiKeyDisplay = document.getElementById('apiKeyDisplay');
         const apiKeySelect = document.getElementById('apiKeySelect');
-        
-        // Validation
-        if (!frameworkSelect.value) {
-            showError('Please select a framework');
-            return;
-        }
-        if (!languageSelect.value) {
-            showError('Please select a language');
-            return;
-        }
-        if (!promptTextarea.value.trim()) {
-            showError('Please enter a test scenario or description');
-            return;
-        }
-        if (!modelSelect.value) {
-            showError('Please select an LLM model');
-            return;
-        }
-        if (!apiKeySelect.value) {
-            showError('Please provide an API key');
+
+        if (!frameworkSelect || !languageSelect || !promptTextarea || !modelSelect) {
+            showError('Error: Required form elements not found');
             return;
         }
 
+        const framework = frameworkSelect.value;
         const frameworkText = frameworkSelect.options[frameworkSelect.selectedIndex].text;
+        const language = languageSelect.value;
         const languageText = languageSelect.options[languageSelect.selectedIndex].text;
+        const scenarioContent = promptTextarea.value;
+        const model = modelSelect.value;
         const modelText = modelSelect.options[modelSelect.selectedIndex].text;
+        const apiKey = apiKeySelect ? apiKeySelect.value : '';
 
-        try {
-            console.log("🔨 Creating agent with config...");
-            
-            const createBtn = document.getElementById('createAndGenerateBtn');
-            createBtn.disabled = true;
-            createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Agent...';
+        // Validation
+        if (!framework) { showError('Please select a framework'); return; }
+        if (!language) { showError('Please select a language'); return; }
+        if (!scenarioContent.trim()) { showError('Please enter a test scenario or description'); return; }
+        if (!model) { showError('Please select an LLM model or agent'); return; }
+        if (!apiKey) { showError('Please provide an API key'); return; }
 
-            const createResponse = await fetch('/api/code-generator/create-agent-with-config', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model_name: modelSelect.value,
-                    llm_provider: modelText.toLowerCase().includes('gpt') ? 'openai' : 
-                                 modelText.toLowerCase().includes('gemini') ? 'google' :
-                                 modelText.toLowerCase().includes('claude') ? 'anthropic' :
-                                 modelText.toLowerCase().includes('deepseek') ? 'deepseek' : 'openai',
-                    llm_api_key: apiKeySelect.value,
-                    framework: frameworkText,
-                    language: languageText,
-                    scenario: promptTextarea.value,
-                    temperature: 0.7
-                })
-            });
-
-            const createData = await createResponse.json();
-            console.log("Agent creation response:", createData);
-
-            if (createData.success) {
-                console.log(`✅ Agent ${createData.action}:`, createData.agent_id);
-                const actionMsg = createData.action === 'updated' ? 'updated' : 'created';
-                showError(`✅ Agent ${actionMsg} successfully! Now generating code...`);
-                
-                // Auto-select the agent
-                document.getElementById('agentSelect').value = createData.agent_id;
-                
-                // Wait a moment then generate
-                setTimeout(() => {
-                    generateCode();
-                }, 1000);
-            } else {
-                showError("Failed to create/update agent: " + (createData.error || "Unknown error"));
-                createBtn.disabled = false;
-                createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Create Agent & Generate';
-            }
-        } catch (error) {
-            console.error('Error creating agent:', error);
-            showError('Failed to create agent: ' + error.message);
-            const createBtn = document.getElementById('createAndGenerateBtn');
-            createBtn.disabled = false;
-            createBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Create Agent & Generate';
-        }
-    }
-async function generateCode() {
-    const frameworkSelect = document.getElementById('frameworkSelect');
-    const languageSelect = document.getElementById('languageSelect');
-    const promptTextarea = document.getElementById('promptTextarea');
-    const modelSelect = document.getElementById('modelSelect');
-    const apiKeyDisplay = document.getElementById('apiKeyDisplay');
-    const apiKeySelect = document.getElementById('apiKeySelect');
-    
-    // Check if elements exist
-    if (!frameworkSelect || !languageSelect || !promptTextarea || !modelSelect) {
-        showError('Error: Required form elements not found');
-        return;
-    }
-
-    const framework = frameworkSelect.value;
-    const frameworkText = frameworkSelect.options[frameworkSelect.selectedIndex].text;
-    const language = languageSelect.value;
-    const languageText = languageSelect.options[languageSelect.selectedIndex].text;
-    const scenarioContent = promptTextarea.value;
-    const model = modelSelect.value;
-    const modelText = modelSelect.options[modelSelect.selectedIndex].text;
-    const apiKeyDisplayVal = apiKeyDisplay ? apiKeyDisplay.value : '';
-    const apiKey = apiKeySelect ? apiKeySelect.value : '';
-
-    // Validation
-    if (!framework) {
-        showError('Please select a framework');
-        return;
-    }
-    if (!language) {
-        showError('Please select a language');
-        return;
-    }
-    if (!scenarioContent.trim()) {
-        showError('Please enter a test scenario or description');
-        return;
-    }
-    if (!model) {
-        showError('Please select an LLM model or agent');
-        return;
-    }
-    if (!apiKey) {
-        showError('Please provide an API key');
-        return;
-    }
-
-// Build robust test code generation prompt with POM and step definitions
-const comprehensivePrompt = `
+        const comprehensivePrompt = `
 === TEST CODE GENERATION REQUEST ===
 
 **Configuration**
@@ -584,388 +619,244 @@ Generate **complete, production-ready test code** in ${languageText} for the ${f
 Please generate the **complete test code** now, **step by step**, using POM and covering all Gherkin steps:
 `;
 
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const generateBtn = document.getElementById('generateBtn');
+        const errorAlert = document.getElementById('errorAlert');
 
-    // Show loading
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    const generateBtn = document.getElementById('generateBtn');
-    const errorAlert = document.getElementById('errorAlert');
-    
-    if (loadingSpinner) loadingSpinner.style.display = 'block';
-    if (generateBtn) {
-        generateBtn.disabled = true;
-        generateBtn.textContent = 'Generating...';
-    }
-    if (errorAlert) errorAlert.style.display = 'none';
+        if (loadingSpinner) loadingSpinner.style.display = 'block';
+        if (generateBtn) { generateBtn.disabled = true; generateBtn.textContent = 'Generating...'; }
+        if (errorAlert) errorAlert.style.display = 'none';
 
-    try {
-        console.log("📤 Starting code generation...");
-        
-        // Extract provider and model
-        let llmProvider = modelText;
-        let modelName = model;
-        
-        if (model.includes(':')) {
-            const parts = model.split(':');
-            llmProvider = parts[0].toLowerCase();
-            modelName = parts.slice(1).join(':');
-        } else {
-            if (model.includes('claude')) llmProvider = 'anthropic';
-            else if (model.includes('gpt')) llmProvider = 'openai';
-            else if (model.includes('google')) llmProvider = modelText;
-            else if (model.includes('mistral')) llmProvider = 'mistral';
-            else if (model.includes('command')) llmProvider = 'cohere';
-            else if (model.includes('llama')) llmProvider = 'groq';
-        }
-        
-        console.log("🤖 Provider:", llmProvider, "| Model:", modelName);
-        
-        // Call with retry
-        const generatedCode = await callAIWithRetry(
-            llmProvider,
-            modelName,
-            apiKey,
-            comprehensivePrompt
-        );
-
-        console.log("✅ Generation successful!");
-
-        const data = {
-            success: true,
-            generated_code: generatedCode,
-            framework: framework,
-            language: language,
-            model: modelText,
-            scenario: scenarioContent
-        };
-
-        displayResults(data);
-        
-    } catch (error) {
-        console.error('❌ Final error:', error);
-        
-        // Format user-friendly error
-        let userMessage = '';
-        const errMsg = error.message || '';
-        
-        if (errMsg.includes('503') || errMsg.includes('UNAVAILABLE')) {
-            userMessage = `⚠️ The ${model} model is currently overloaded. Please:\n\n1. Try again in 1-2 minutes, or\n2. Select a different model (OpenAI GPT, Anthropic Claude, or Groq are usually more available)`;
-        } else if (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('API key')) {
-            userMessage = '🔑 Invalid API key. Please check your API key settings.';
-        } else if (errMsg.includes('429') || errMsg.includes('rate limit')) {
-            userMessage = '⏱️ Rate limit reached. Please wait a moment and try again.';
-        } else if (errMsg.includes('timeout')) {
-            userMessage = '⏱️ Request timed out. The AI is taking too long to respond. Please try again.';
-        } else if (errMsg.includes('not supported')) {
-            userMessage = `❌ ${errMsg}`;
-        } else {
-            userMessage = `❌ Error: ${errMsg.substring(0, 200)}`;
-        }
-        
-        showError(userMessage);
-        
-    } finally {
-        const spinner = document.getElementById('loadingSpinner');
-        const btn = document.getElementById('generateBtn');
-        if (spinner) spinner.style.display = 'none';
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'Generate Code';
-        }
-    }
-}
-
-// ==========================================
-// RETRY LOGIC
-// ==========================================
-async function callAIWithRetry(provider, model, apiKey, prompt, maxRetries = 3) {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            console.log(`🔄 Attempt ${attempt}/${maxRetries}`);
-            
-            const result = await iaGenerative(model,provider , apiKey, prompt);
-            console.log(`✅ Success on attempt ${attempt}!`);
-            return result;
-            
+            let llmProvider = modelText;
+            let modelName = model;
+
+            if (model.includes(':')) {
+                const parts = model.split(':');
+                llmProvider = parts[0].toLowerCase();
+                modelName = parts.slice(1).join(':');
+            } else {
+                if (model.includes('claude')) llmProvider = 'anthropic';
+                else if (model.includes('gpt')) llmProvider = 'openai';
+                else if (model.includes('google')) llmProvider = modelText;
+                else if (model.includes('mistral')) llmProvider = 'mistral';
+                else if (model.includes('command')) llmProvider = 'cohere';
+                else if (model.includes('llama')) llmProvider = 'groq';
+            }
+
+            const generatedCode = await callAIWithRetry(llmProvider, modelName, apiKey, comprehensivePrompt);
+
+            const data = {
+                success: true,
+                generated_code: generatedCode,
+                framework: framework,
+                language: language,
+                model: modelText,
+                scenario: scenarioContent
+            };
+
+            displayResults(data);
+
         } catch (error) {
             const errMsg = error.message || '';
-            console.warn(`⚠️ Attempt ${attempt} failed:`, errMsg.substring(0, 100));
-            
-            // Check if retryable
-            const is503 = errMsg.includes('503') || errMsg.includes('UNAVAILABLE');
-            const is429 = errMsg.includes('429') || errMsg.includes('rate limit');
-            const is502 = errMsg.includes('502');
-            const isTimeout = errMsg.includes('timeout');
-            
-            const isRetryable = is503 || is429 || is502 || isTimeout;
-            
-            // Don't retry on last attempt or non-retryable errors
-            if (attempt === maxRetries || !isRetryable) {
-                throw error;
+            let userMessage = '';
+
+            if (errMsg.includes('503') || errMsg.includes('UNAVAILABLE')) {
+                userMessage = `⚠️ The ${model} model is currently overloaded. Please try again in 1-2 minutes, or select a different model.`;
+            } else if (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('API key')) {
+                userMessage = '🔑 Invalid API key. Please check your API key settings.';
+            } else if (errMsg.includes('429') || errMsg.includes('rate limit')) {
+                userMessage = '⏱️ Rate limit reached. Please wait a moment and try again.';
+            } else if (errMsg.includes('timeout')) {
+                userMessage = '⏱️ Request timed out. Please try again.';
+            } else if (errMsg.includes('not supported')) {
+                userMessage = `❌ ${errMsg}`;
+            } else {
+                userMessage = `❌ Error: ${errMsg.substring(0, 200)}`;
             }
-            
-            // Exponential backoff: 1s, 2s, 4s
-            const delay = Math.pow(2, attempt - 1) * 1000;
-            console.log(`⏳ Waiting ${delay/1000}s before retry...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-}
 
-// ==========================================
-// CORE AI FUNCTION
-// ==========================================
-async function iaGenerative(llmModel, modelName, apiKey, prompt) {
-    
-    const configs = {
-        
-        "anthropic": {
-            url: "https://api.anthropic.com/v1/messages",
-            headers: {
-                "Content-Type": "application/json",
-                "x-api-key": apiKey,
-                "anthropic-version": "2023-06-01"
-            },
-            body: {
-                model: modelName,
-                max_tokens: 4096,
-                messages: [{ role: "user", content: prompt }]
-            },
-            extract: (data) => data.content[0].text
-        },
-        
-        "openai": {
-            url: "https://api.openai.com/v1/chat/completions",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`
-            },
-            body: {
-                model: modelName,
-                messages: [{ role: "user", content: prompt }]
-            },
-            extract: (data) => data.choices[0].message.content
-        },
-        
-        "google": {
-            url: `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: {
-                contents: [{ parts: [{ text: prompt }] }]
-            },
-            extract: (data) => data.candidates[0].content.parts[0].text
-        },
-        
-        "mistral": {
-            url: "https://api.mistral.ai/v1/chat/completions",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`
-            },
-            body: {
-                model: modelName,
-                messages: [{ role: "user", content: prompt }]
-            },
-            extract: (data) => data.choices[0].message.content
-        },
-        
-        "cohere": {
-            url: "https://api.cohere.ai/v1/chat",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`
-            },
-            body: {
-                model: modelName,
-                message: prompt
-            },
-            extract: (data) => data.text
-        },
-        
-        "groq": {
-            url: "https://api.groq.com/openai/v1/chat/completions",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`
-            },
-            body: {
-                model: modelName,
-                messages: [{ role: "user", content: prompt }]
-            },
-            extract: (data) => data.choices[0].message.content
-        },
-        
-        "perplexity": {
-            url: "https://api.perplexity.ai/chat/completions",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`
-            },
-            body: {
-                model: modelName,
-                messages: [{ role: "user", content: prompt }]
-            },
-            extract: (data) => data.choices[0].message.content
-        }
-    };
-    
-    const config = configs[llmModel.toLowerCase()];
-    
-    if (!config) {
-        throw new Error(`Provider "${llmModel}" not supported. Available: anthropic, openai, google, mistral, cohere, groq, perplexity`);
-    }
-    
-    // Timeout controller
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
-    
-    try {
-        const response = await fetch(config.url, {
-            method: "POST",
-            headers: config.headers,
-            body: JSON.stringify(config.body),
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`API Error (${response.status}): ${errorText}`);
-        }
-        
-        const data = await response.json();
-        return config.extract(data);
-        
-    } catch (error) {
-        clearTimeout(timeoutId);
-        
-        if (error.name === 'AbortError') {
-            throw new Error('Request timeout after 60 seconds');
-        }
-        throw error;
-    }
-}
+            showError(userMessage);
 
-// ==========================================
-// IMPROVED showError FUNCTION
-// ==========================================
-function showError(message) {
-    console.log('🔴 Showing error:', message);
-    
-    // Try to find error display elements
-    const errorMessage = document.getElementById('errorMessage');
-    const errorAlert = document.getElementById('errorAlert');
-    
-    if (errorMessage) {
-        errorMessage.textContent = message;
-        console.log('✅ Updated errorMessage element');
-    } else {
-        console.warn('⚠️ errorMessage element not found');
+        } finally {
+            const spinner = document.getElementById('loadingSpinner');
+            const btn = document.getElementById('generateBtn');
+            if (spinner) spinner.style.display = 'none';
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic"></i> Generate code...'; }
+        }
     }
-    
-    if (errorAlert) {
-        errorAlert.style.display = 'block';
-        errorAlert.className = 'alert alert-danger mt-3';
-        errorAlert.innerHTML = `<strong>Error:</strong> ${message}`;
-        console.log('✅ Showed errorAlert');
-    } else {
-        console.warn('⚠️ errorAlert element not found');
-        // Fallback: use browser alert
-        alert(message);
+
+    // ==========================================
+    // RETRY LOGIC
+    // ==========================================
+    async function callAIWithRetry(provider, model, apiKey, prompt, maxRetries = 3) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const result = await iaGenerative(model, provider, apiKey, prompt);
+                return result;
+            } catch (error) {
+                const errMsg = error.message || '';
+                const isRetryable = errMsg.includes('503') || errMsg.includes('UNAVAILABLE') ||
+                                    errMsg.includes('429') || errMsg.includes('rate limit') ||
+                                    errMsg.includes('502') || errMsg.includes('timeout');
+
+                if (attempt === maxRetries || !isRetryable) throw error;
+
+                const delay = Math.pow(2, attempt - 1) * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
     }
-}
+
+    // ==========================================
+    // CORE AI FUNCTION
+    // ==========================================
+    async function iaGenerative(llmModel, modelName, apiKey, prompt) {
+        const configs = {
+            "anthropic": {
+                url: "https://api.anthropic.com/v1/messages",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": apiKey,
+                    "anthropic-version": "2023-06-01"
+                },
+                body: { model: modelName, max_tokens: 4096, messages: [{ role: "user", content: prompt }] },
+                extract: (data) => data.content[0].text
+            },
+            "openai": {
+                url: "https://api.openai.com/v1/chat/completions",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: { model: modelName, messages: [{ role: "user", content: prompt }] },
+                extract: (data) => data.choices[0].message.content
+            },
+            "google": {
+                url: `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+                headers: { "Content-Type": "application/json" },
+                body: { contents: [{ parts: [{ text: prompt }] }] },
+                extract: (data) => data.candidates[0].content.parts[0].text
+            },
+            "mistral": {
+                url: "https://api.mistral.ai/v1/chat/completions",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: { model: modelName, messages: [{ role: "user", content: prompt }] },
+                extract: (data) => data.choices[0].message.content
+            },
+            "cohere": {
+                url: "https://api.cohere.ai/v1/chat",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: { model: modelName, message: prompt },
+                extract: (data) => data.text
+            },
+            "groq": {
+                url: "https://api.groq.com/openai/v1/chat/completions",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: { model: modelName, messages: [{ role: "user", content: prompt }] },
+                extract: (data) => data.choices[0].message.content
+            },
+            "perplexity": {
+                url: "https://api.perplexity.ai/chat/completions",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: { model: modelName, messages: [{ role: "user", content: prompt }] },
+                extract: (data) => data.choices[0].message.content
+            }
+        };
+
+        const config = configs[llmModel.toLowerCase()];
+        if (!config) {
+            throw new Error(`Provider "${llmModel}" not supported. Available: anthropic, openai, google, mistral, cohere, groq, perplexity`);
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+        try {
+            const response = await fetch(config.url, {
+                method: "POST",
+                headers: config.headers,
+                body: JSON.stringify(config.body),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API Error (${response.status}): ${errorText}`);
+            }
+
+            const data = await response.json();
+            return config.extract(data);
+
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') throw new Error('Request timeout after 60 seconds');
+            throw error;
+        }
+    }
+
+    // ==========================================
+    // DISPLAY RESULTS
+    // ==========================================
     function displayResults(data) {
-        console.log("📊 Displaying results with data:", data);
-        
         try {
             const framework = data.framework || 'Unknown';
             const language = data.language || 'Unknown';
-            const model = data.model_used || 'Unknown';
+            const model = data.model_used || data.model || 'Unknown';
             const code = data.generated_code || 'No code generated';
             const apiError = data.api_error;
-            
-            console.log("Setting framework:", framework);
-            console.log("Setting language:", language);
-            console.log("Setting model:", model);
-            console.log("Setting code length:", code.length, "characters");
-              console.log("Setting code length:", code, "");
-            if (apiError) {
-                console.warn("API Error:", apiError);
-            }          
+
             document.getElementById('resultFramework').textContent = framework;
             document.getElementById('resultLanguage').textContent = language;
-            document.getElementById('resultModel').textContent = model;
-            
+
             const codeBlock = document.getElementById('generatedCodeBlock');
             if (codeBlock && codeBlock.querySelector('code')) {
                 codeBlock.querySelector('code').textContent = code;
             } else {
                 codeBlock.textContent = code;
             }
-            
+
             const resultsSection = document.getElementById('resultsSection');
             resultsSection.style.display = 'block';
-            
-            // Show API error warning if present
+
             if (apiError) {
-                console.warn("⚠️ Generation used fallback template due to API error");
                 showError(`⚠️ Note: Using template code because LLM API failed: ${apiError}`);
             }
-            
-            console.log("✅ Results section displayed");
 
-            // Scroll to results
-            setTimeout(() => {
-                resultsSection.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
+            setTimeout(() => { resultsSection.scrollIntoView({ behavior: 'smooth' }); }, 100);
+
         } catch (error) {
-            console.error("❌ Error displaying results:", error);
             showError("Error displaying results: " + error.message);
         }
     }
 
+    // ==========================================
+    // COPY & DOWNLOAD
+    // ==========================================
     function copyCode() {
         try {
             const codeBlock = document.getElementById('generatedCodeBlock');
-            if (!codeBlock) {
-                showError('Error: Code block not found');
-                return;
-            }
-            
-            // Get text content from the code element or code block
-            let code = codeBlock.querySelector('code') ? 
-                       codeBlock.querySelector('code').textContent : 
+            if (!codeBlock) { showError('Error: Code block not found'); return; }
+
+            let code = codeBlock.querySelector('code') ?
+                       codeBlock.querySelector('code').textContent :
                        codeBlock.textContent;
-            
-            if (!code || code.trim().length === 0) {
-                showError('No code to copy');
-                return;
-            }
-            
-            // Copy to clipboard
+
+            if (!code || code.trim().length === 0) { showError('No code to copy'); return; }
+
             navigator.clipboard.writeText(code).then(() => {
-                // Find the copy button
                 const copyBtn = document.querySelector('#resultsSection .btn-light');
                 if (copyBtn) {
                     const originalHTML = copyBtn.innerHTML;
                     copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     copyBtn.style.backgroundColor = '#28a745';
                     copyBtn.style.color = 'white';
-                    
                     setTimeout(() => {
                         copyBtn.innerHTML = originalHTML;
                         copyBtn.style.backgroundColor = '';
                         copyBtn.style.color = '';
                     }, 2000);
                 }
-            }).catch(err => {
-                console.error('Clipboard error:', err);
-                showError('Failed to copy code: ' + err.message);
-            });
+            }).catch(err => showError('Failed to copy code: ' + err.message));
         } catch (error) {
-            console.error('Error in copyCode:', error);
             showError('Error: ' + error.message);
         }
     }
@@ -974,13 +865,10 @@ function showError(message) {
         const code = document.getElementById('generatedCodeBlock').textContent;
         const framework = document.getElementById('resultFramework').textContent;
         const language = document.getElementById('resultLanguage').textContent;
-        
+
         const fileExtensions = {
-            'typescript': '.ts',
-            'javascript': '.js',
-            'java': '.java',
-            'python': '.py',
-            'csharp': '.cs'
+            'typescript': '.ts', 'javascript': '.js',
+            'java': '.java', 'python': '.py', 'csharp': '.cs'
         };
 
         const ext = fileExtensions[language.toLowerCase()] || '.txt';
@@ -995,31 +883,22 @@ function showError(message) {
         document.body.removeChild(element);
     }
 
+    // ==========================================
+    // ERROR HANDLING
+    // ==========================================
     function showError(message) {
         const errorMessage = document.getElementById('errorMessage');
         const errorAlert = document.getElementById('errorAlert');
-        
-        console.log("🔴 Showing error:", message);
-        
-        if (errorMessage) {
-            errorMessage.textContent = message;
-        } else {
-            console.error("⚠️  errorMessage element not found");
-            alert('Error: ' + message);
-        }
-        
-        if (errorAlert) {
-            errorAlert.style.display = 'block';
-        } else {
-            console.error("⚠️  errorAlert element not found");
-        }
+
+        if (errorMessage) errorMessage.textContent = message;
+        else alert('Error: ' + message);
+
+        if (errorAlert) errorAlert.style.display = 'block';
     }
 
     function closeError() {
         const errorAlert = document.getElementById('errorAlert');
-        if (errorAlert) {
-            errorAlert.style.display = 'none';
-        }
+        if (errorAlert) errorAlert.style.display = 'none';
     }
 </script>
 {% endblock %}

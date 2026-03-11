@@ -74,10 +74,10 @@
                     <h5 class="mb-0"><i class="fas fa-edit"></i> Convert Manual Scenario to Gherkin Format</h5>
                 </div>
                 <div class="card-body">
-                    <textarea 
-                        id="promptTextarea" 
-                        class="form-control" 
-                        rows="12" 
+                    <textarea
+                        id="promptTextarea"
+                        class="form-control"
+                        rows="12"
                         placeholder="Describe your test scenario in Gherkin format or natural language...&#10;&#10;Example (Gherkin):&#10;Given I am on the login page&#10;When I enter valid credentials&#10;And I click the login button&#10;Then I should see the dashboard&#10;And the user profile should be displayed&#10;&#10;Or in natural language:&#10;Create a test that logs into the application, navigates to the dashboard, and verifies that the user profile is displayed correctly.">
                     </textarea>
                     <small class="text-muted d-block mt-2">
@@ -130,7 +130,6 @@
                     <div class="mb-2">
                         <span class="badge bg-primary">Framework: <span id="resultFramework"></span></span>
                         <span class="badge bg-info ms-2">Language: <span id="resultLanguage"></span></span>
-                        <span class="badge bg-secondary ms-2">Model: <span id="resultModel"></span></span>
                     </div>
                     <pre id="generatedCodeBlock" style="max-height: 500px; overflow-y: auto;"><code></code></pre>
                 </div>
@@ -196,7 +195,7 @@
 </style>
 
 <script>
-  
+
 
     // Load initial data
     document.addEventListener('DOMContentLoaded', function() {
@@ -242,21 +241,21 @@
     async function createTestAgent() {
         try {
             console.log("Creating test agent...");
-            
+
             const createTestAgentBtn = document.getElementById('createTestAgentBtn');
             createTestAgentBtn.disabled = true;
             createTestAgentBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
-            
+
             const response = await fetch('/api/code-generator/create-test-agent', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             const data = await response.json();
             console.log("Test agent creation response:", data);
-            
+
             if (data.success) {
                 showError('✅ Test agent created! Reloading agents...');
                 setTimeout(() => {
@@ -298,11 +297,11 @@
 
             if (data.success) {
                 const agent = data.agent;
-                
+
                 // Set model - clear and add new option
                 const modelSelect = document.getElementById('modelSelect');
                 modelSelect.innerHTML = '<option value="">Select a model...</option>';
-                
+
                 if (agent.llm_model_name) {
                     const modelOption = document.createElement('option');
                     modelOption.value = agent.llm_provider;
@@ -311,7 +310,7 @@
                     modelSelect.appendChild(modelOption);
                     console.log("Added model option:", agent.llm_model_name);
                 }
-                
+
                 // Set API key display - show masked key with provider
                 let apiKeyDisplay = '';
                 if (agent.llm_api_key) {
@@ -321,10 +320,10 @@
                 } else {
                     apiKeyDisplay = `${agent.llm_provider}: Not set`;
                 }
-                
+
                 document.getElementById('apiKeyDisplay').value = apiKeyDisplay;
                 document.getElementById('apiKeySelect').value = agent.llm_api_key || '';
-                
+
                 console.log("Agent details loaded successfully", {
                     provider: agent.llm_provider,
                     model: agent.llm_model_name,
@@ -389,7 +388,7 @@
         const promptTextarea = document.getElementById('promptTextarea');
         const modelSelect = document.getElementById('modelSelect');
         const apiKeySelect = document.getElementById('apiKeySelect');
-        
+
         // Validation
         if (!frameworkSelect.value) {
             showError('Please select a framework');
@@ -418,7 +417,7 @@
 
         try {
             console.log("🔨 Creating agent with config...");
-            
+
             const createBtn = document.getElementById('createAndGenerateBtn');
             createBtn.disabled = true;
             createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Agent...';
@@ -430,7 +429,7 @@
                 },
                 body: JSON.stringify({
                     model_name: modelSelect.value,
-                    llm_provider: modelText.toLowerCase().includes('gpt') ? 'openai' : 
+                    llm_provider: modelText.toLowerCase().includes('gpt') ? 'openai' :
                                  modelText.toLowerCase().includes('gemini') ? 'google' :
                                  modelText.toLowerCase().includes('claude') ? 'anthropic' :
                                  modelText.toLowerCase().includes('deepseek') ? 'deepseek' : 'openai',
@@ -449,10 +448,10 @@
                 console.log(`✅ Agent ${createData.action}:`, createData.agent_id);
                 const actionMsg = createData.action === 'updated' ? 'updated' : 'created';
                 showError(`✅ Agent ${actionMsg} successfully! Now generating code...`);
-                
+
                 // Auto-select the agent
                 document.getElementById('agentSelect').value = createData.agent_id;
-                
+
                 // Wait a moment then generate
                 setTimeout(() => {
                     generateCode();
@@ -475,7 +474,7 @@ async function generateCode() {
     const modelSelect = document.getElementById('modelSelect');
     const apiKeyDisplay = document.getElementById('apiKeyDisplay');
     const apiKeySelect = document.getElementById('apiKeySelect');
-    
+
     // Check if elements exist
     if ( !promptTextarea || !modelSelect) {
         showError('Error: Required form elements not found');
@@ -527,7 +526,7 @@ Please generate the Gherkin scenario now:
     const loadingSpinner = document.getElementById('loadingSpinner');
     const generateBtn = document.getElementById('generateBtn');
     const errorAlert = document.getElementById('errorAlert');
-    
+
     if (loadingSpinner) loadingSpinner.style.display = 'block';
     if (generateBtn) {
         generateBtn.disabled = true;
@@ -537,11 +536,11 @@ Please generate the Gherkin scenario now:
 
     try {
         console.log("📤 Starting code generation...");
-        
+
         // Extract provider and model
         let llmProvider = modelText;
         let modelName = model;
-        
+
         if (model.includes(':')) {
             const parts = model.split(':');
             llmProvider = parts[0].toLowerCase();
@@ -554,9 +553,9 @@ Please generate the Gherkin scenario now:
             else if (model.includes('command')) llmProvider = 'cohere';
             else if (model.includes('llama')) llmProvider = 'groq';
         }
-        
+
         console.log("🤖 Provider:", llmProvider, "| Model:", modelName);
-        
+
         // Call with retry
         const generatedCode = await callAIWithRetry(
             llmProvider,
@@ -577,14 +576,14 @@ Please generate the Gherkin scenario now:
         };
 
         displayResults(data);
-        
+
     } catch (error) {
         console.error('❌ Final error:', error);
-        
+
         // Format user-friendly error
         let userMessage = '';
         const errMsg = error.message || '';
-        
+
         if (errMsg.includes('503') || errMsg.includes('UNAVAILABLE')) {
             userMessage = `⚠️ The ${model} model is currently overloaded. Please:\n\n1. Try again in 1-2 minutes, or\n2. Select a different model (OpenAI GPT, Anthropic Claude, or Groq are usually more available)`;
         } else if (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('API key')) {
@@ -598,9 +597,9 @@ Please generate the Gherkin scenario now:
         } else {
             userMessage = `❌ Error: ${errMsg.substring(0, 200)}`;
         }
-        
+
         showError(userMessage);
-        
+
     } finally {
         const spinner = document.getElementById('loadingSpinner');
         const btn = document.getElementById('generateBtn');
@@ -619,28 +618,28 @@ async function callAIWithRetry(provider, model, apiKey, prompt, maxRetries = 3) 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             console.log(`🔄 Attempt ${attempt}/${maxRetries}`);
-            
+
             const result = await iaGenerative(model,provider, apiKey, prompt);
             console.log(`✅ Success on attempt ${attempt}!`);
             return result;
-            
+
         } catch (error) {
             const errMsg = error.message || '';
             console.warn(`⚠️ Attempt ${attempt} failed:`, errMsg.substring(0, 100));
-            
+
             // Check if retryable
             const is503 = errMsg.includes('503') || errMsg.includes('UNAVAILABLE');
             const is429 = errMsg.includes('429') || errMsg.includes('rate limit');
             const is502 = errMsg.includes('502');
             const isTimeout = errMsg.includes('timeout');
-            
+
             const isRetryable = is503 || is429 || is502 || isTimeout;
-            
+
             // Don't retry on last attempt or non-retryable errors
             if (attempt === maxRetries || !isRetryable) {
                 throw error;
             }
-            
+
             // Exponential backoff: 1s, 2s, 4s
             const delay = Math.pow(2, attempt - 1) * 1000;
             console.log(`⏳ Waiting ${delay/1000}s before retry...`);
@@ -653,9 +652,9 @@ async function callAIWithRetry(provider, model, apiKey, prompt, maxRetries = 3) 
 // CORE AI FUNCTION
 // ==========================================
 async function iaGenerative(llmModel, modelName, apiKey, prompt) {
-    
+
     const configs = {
-        
+
         "anthropic": {
             url: "https://api.anthropic.com/v1/messages",
             headers: {
@@ -670,7 +669,7 @@ async function iaGenerative(llmModel, modelName, apiKey, prompt) {
             },
             extract: (data) => data.content[0].text
         },
-        
+
         "openai": {
             url: "https://api.openai.com/v1/chat/completions",
             headers: {
@@ -683,7 +682,7 @@ async function iaGenerative(llmModel, modelName, apiKey, prompt) {
             },
             extract: (data) => data.choices[0].message.content
         },
-        
+
         "google": {
             url: `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
             headers: {
@@ -694,7 +693,7 @@ async function iaGenerative(llmModel, modelName, apiKey, prompt) {
             },
             extract: (data) => data.candidates[0].content.parts[0].text
         },
-        
+
         "mistral": {
             url: "https://api.mistral.ai/v1/chat/completions",
             headers: {
@@ -707,7 +706,7 @@ async function iaGenerative(llmModel, modelName, apiKey, prompt) {
             },
             extract: (data) => data.choices[0].message.content
         },
-        
+
         "cohere": {
             url: "https://api.cohere.ai/v1/chat",
             headers: {
@@ -720,7 +719,7 @@ async function iaGenerative(llmModel, modelName, apiKey, prompt) {
             },
             extract: (data) => data.text
         },
-        
+
         "groq": {
             url: "https://api.groq.com/openai/v1/chat/completions",
             headers: {
@@ -733,7 +732,7 @@ async function iaGenerative(llmModel, modelName, apiKey, prompt) {
             },
             extract: (data) => data.choices[0].message.content
         },
-        
+
         "perplexity": {
             url: "https://api.perplexity.ai/chat/completions",
             headers: {
@@ -747,17 +746,17 @@ async function iaGenerative(llmModel, modelName, apiKey, prompt) {
             extract: (data) => data.choices[0].message.content
         }
     };
-    
+
     const config = configs[llmModel.toLowerCase()];
-    
+
     if (!config) {
         throw new Error(`Provider "${llmModel}" not supported. Available: anthropic, openai, google, mistral, cohere, groq, perplexity`);
     }
-    
+
     // Timeout controller
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
-    
+
     try {
         const response = await fetch(config.url, {
             method: "POST",
@@ -765,20 +764,20 @@ async function iaGenerative(llmModel, modelName, apiKey, prompt) {
             body: JSON.stringify(config.body),
             signal: controller.signal
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`API Error (${response.status}): ${errorText}`);
         }
-        
+
         const data = await response.json();
         return config.extract(data);
-        
+
     } catch (error) {
         clearTimeout(timeoutId);
-        
+
         if (error.name === 'AbortError') {
             throw new Error('Request timeout after 60 seconds');
         }
@@ -791,18 +790,18 @@ async function iaGenerative(llmModel, modelName, apiKey, prompt) {
 // ==========================================
 function showError(message) {
     console.log('🔴 Showing error:', message);
-    
+
     // Try to find error display elements
     const errorMessage = document.getElementById('errorMessage');
     const errorAlert = document.getElementById('errorAlert');
-    
+
     if (errorMessage) {
         errorMessage.textContent = message;
         console.log('✅ Updated errorMessage element');
     } else {
         console.warn('⚠️ errorMessage element not found');
     }
-    
+
     if (errorAlert) {
         errorAlert.style.display = 'block';
         errorAlert.className = 'alert alert-danger mt-3';
@@ -816,14 +815,14 @@ function showError(message) {
 }
     function displayResults(data) {
         console.log("📊 Displaying results with data:", data);
-        
+
         try {
             const framework = data.framework || 'Unknown';
             const language = data.language || 'Unknown';
             const model = data.model_used || 'Unknown';
             const code = data.generated_code || 'No code generated';
             const apiError = data.api_error;
-            
+
             console.log("Setting framework:", framework);
             console.log("Setting language:", language);
             console.log("Setting model:", model);
@@ -831,27 +830,26 @@ function showError(message) {
               console.log("Setting code length:", code, "");
             if (apiError) {
                 console.warn("API Error:", apiError);
-            }          
+            }
             document.getElementById('resultFramework').textContent = framework;
             document.getElementById('resultLanguage').textContent = language;
-            document.getElementById('resultModel').textContent = model;
-            
+
             const codeBlock = document.getElementById('generatedCodeBlock');
             if (codeBlock && codeBlock.querySelector('code')) {
                 codeBlock.querySelector('code').textContent = code;
             } else {
                 codeBlock.textContent = code;
             }
-            
+
             const resultsSection = document.getElementById('resultsSection');
             resultsSection.style.display = 'block';
-            
+
             // Show API error warning if present
             if (apiError) {
                 console.warn("⚠️ Generation used fallback template due to API error");
                 showError(`⚠️ Note: Using template code because LLM API failed: ${apiError}`);
             }
-            
+
             console.log("✅ Results section displayed");
 
             // Scroll to results
@@ -871,17 +869,17 @@ function showError(message) {
                 showError('Error: Code block not found');
                 return;
             }
-            
+
             // Get text content from the code element or code block
-            let code = codeBlock.querySelector('code') ? 
-                       codeBlock.querySelector('code').textContent : 
+            let code = codeBlock.querySelector('code') ?
+                       codeBlock.querySelector('code').textContent :
                        codeBlock.textContent;
-            
+
             if (!code || code.trim().length === 0) {
                 showError('No code to copy');
                 return;
             }
-            
+
             // Copy to clipboard
             navigator.clipboard.writeText(code).then(() => {
                 // Find the copy button
@@ -891,7 +889,7 @@ function showError(message) {
                     copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     copyBtn.style.backgroundColor = '#28a745';
                     copyBtn.style.color = 'white';
-                    
+
                     setTimeout(() => {
                         copyBtn.innerHTML = originalHTML;
                         copyBtn.style.backgroundColor = '';
@@ -912,7 +910,7 @@ function showError(message) {
         const code = document.getElementById('generatedCodeBlock').textContent;
         const framework = document.getElementById('resultFramework').textContent;
         const language = document.getElementById('resultLanguage').textContent;
-        
+
         const ext =  '.feature';
         const filename = `test-${framework.toLowerCase()}-${language.toLowerCase()}${ext}`;
 
@@ -928,16 +926,16 @@ function showError(message) {
     function showError(message) {
         const errorMessage = document.getElementById('errorMessage');
         const errorAlert = document.getElementById('errorAlert');
-        
+
         console.log("🔴 Showing error:", message);
-        
+
         if (errorMessage) {
             errorMessage.textContent = message;
         } else {
             console.error("⚠️  errorMessage element not found");
             alert('Error: ' + message);
         }
-        
+
         if (errorAlert) {
             errorAlert.style.display = 'block';
         } else {

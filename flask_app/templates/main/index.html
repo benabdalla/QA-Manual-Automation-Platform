@@ -44,7 +44,7 @@
                             <span id="settingsStatus" class="small"></span>
                         </div>
 
-                      <form method="POST"
+                        <form method="POST"
                               action="{{ url_for('main.generate') }}"
                               id="testForm">
 
@@ -62,15 +62,15 @@
                                             🔑 Clé Jira (Requirement Key)
                                         </label>
                                     </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio"
-                                               name="input_source" id="radioUserStory"
-                                               value="user_story"
-                                               onchange="toggleInputSource(this.value)">
-                                        <label class="form-check-label" for="radioUserStory">
-                                            📝 User Story (texte libre)
-                                        </label>
-                                    </div>
+<!--                                    <div class="form-check">-->
+<!--                                        <input class="form-check-input" type="radio"-->
+<!--                                               name="input_source" id="radioUserStory"-->
+<!--                                               value="user_story"-->
+<!--                                               onchange="toggleInputSource(this.value)">-->
+<!--                                        <label class="form-check-label" for="radioUserStory">-->
+<!--                                            📝 User Story (texte libre)-->
+<!--                                        </label>-->
+<!--                                    </div>-->
                                 </div>
                             </div>
 
@@ -201,130 +201,136 @@
 </div>
 
 <script>
-/**
- * Fetch Jira/Xray settings from the server and populate form fields.
- * ✅ FIX: reads result.data (object), not result.settings[0] (broken array access)
- */
-async function loadJiraXraySettings() {
-    const btn    = document.getElementById('btnLoadSettings');
-    const status = document.getElementById('settingsStatus');
+    /**
+     * Fetch Jira/Xray settings from the server and populate form fields.
+     * ✅ FIX: reads result.data (object), not result.settings[0] (broken array access)
+     */
+    async function loadJiraXraySettings() {
+        const btn    = document.getElementById('btnLoadSettings');
+        const status = document.getElementById('settingsStatus');
 
-    btn.disabled  = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Chargement...';
-    status.innerHTML = '';
+        btn.disabled  = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Chargement...';
+        status.innerHTML = '';
 
-    try {
-        const response = await fetch('/api/jira-xray-settings', {
-            method: 'GET',
-            headers: {
-                'Content-Type':    'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+        try {
+            const response = await fetch('/api/jira-xray-settings', {
+                method: 'GET',
+                headers: {
+                    'Content-Type':    'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                // 404 just means no settings saved yet — don't alarm the user
+                if (response.status === 404) {
+                    showSettingsStatus('info', 'ℹ️ Aucun paramètre sauvegardé.');
+                } else {
+                    showSettingsStatus('error', '❌ ' + (result.message || 'Erreur lors du chargement.'));
+                }
+                return;
             }
-        });
+            // Filter only active settings
+    const activeSettings = result.settings.filter(s => s.is_active === true);
 
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-            // 404 just means no settings saved yet — don't alarm the user
-            if (response.status === 404) {
-                showSettingsStatus('info', 'ℹ️ Aucun paramètre sauvegardé.');
-            } else {
-                showSettingsStatus('error', '❌ ' + (result.message || 'Erreur lors du chargement.'));
-            }
-            return;
-        }
-
-        // ✅ FIX: the API returns result.data (an object), not result.settings[0]
-        fillFormWithSettings(result.settings[0]);
-        showSettingsStatus('success', '✅ Paramètres chargés avec succès !');
-
-    } catch (error) {
-        console.error('loadJiraXraySettings error:', error);
-        showSettingsStatus('error', '❌ Erreur réseau. Veuillez réessayer.');
-    } finally {
-        btn.disabled  = false;
-        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Charger mes paramètres';
-    }
-}
-
-/**
- * Map API data fields to form inputs.
- */
-function fillFormWithSettings(data) {
-    if (!data) {
-        showSettingsStatus('error', '❌ Aucune donnée reçue.');
+    if (activeSettings.length === 0) {
+        showSettingsStatus('info', 'ℹ️ Aucun paramètre actif trouvé.');
         return;
     }
 
-    const fieldMap = {
-        'req':          data.jira_requirement_key || '',
-        'username':     data.jira_username        || '',
-        'baseurl':      data.jira_url             || '',
-        'project_key':  data.project_key          || '',
-        'version_name': data.version_name         || '',
-        'folder_path':  data.xray_folder_path     || '',
-        'tc_amount':    data.num_test_cases        || 1,
-    };
+    fillFormWithSettings(activeSettings[0]);
+    showSettingsStatus('success', '✅ Paramètres chargés avec succès !');
 
-    Object.entries(fieldMap).forEach(([name, value]) => {
-        const el = document.querySelector(`[name="${name}"]`);
-        if (el) {
-            el.value = value;
-            if (value) {
-                el.classList.add('border-success');
-                setTimeout(() => el.classList.remove('border-success'), 2000);
-            }
+        } catch (error) {
+            console.error('loadJiraXraySettings error:', error);
+            showSettingsStatus('error', '❌ Erreur réseau. Veuillez réessayer.');
+        } finally {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="fas fa-sync-alt"></i> Charger mes paramètres';
         }
-    });
-}
-
-function showSettingsStatus(type, message) {
-    const status = document.getElementById('settingsStatus');
-    const cls = type === 'success' ? 'text-success'
-              : type === 'error'   ? 'text-danger'
-              :                      'text-secondary';
-    status.className  = `small ${cls}`;
-    status.innerHTML  = message;
-    setTimeout(() => { status.innerHTML = ''; }, 4000);
-}
-
-// Auto-load on page ready
-document.addEventListener('DOMContentLoaded', function () {
-    loadJiraXraySettings();
-});
-
-/**
- * Toggle between Jira key and User Story input modes.
- */
-function toggleInputSource(value) {
-    const fieldReq       = document.getElementById('field_req');
-    const fieldUserStory = document.getElementById('field_user_story');
-    const reqInput       = fieldReq.querySelector('input[name="req"]');
-    const storyTextarea  = fieldUserStory.querySelector('textarea[name="user_story"]');
-
-    if (value === 'user_story') {
-        fieldReq.classList.add('d-none');
-        fieldUserStory.classList.remove('d-none');
-        reqInput.removeAttribute('required');
-        storyTextarea.setAttribute('required', 'required');
-    } else {
-        fieldReq.classList.remove('d-none');
-        fieldUserStory.classList.add('d-none');
-        reqInput.setAttribute('required', 'required');
-        storyTextarea.removeAttribute('required');
     }
-}
 
-// Show spinner on submit
-document.getElementById('testForm').addEventListener('submit', function () {
-    document.getElementById('loading').classList.remove('d-none');
-    this.querySelector('button[type="submit"]').disabled = true;
-});
+    /**
+     * Map API data fields to form inputs.
+     */
+    function fillFormWithSettings(data) {
+        if (!data) {
+            showSettingsStatus('error', '❌ Aucune donnée reçue.');
+            return;
+        }
 
-// Restore correct toggle state on page load (after POST validation errors)
-const selectedRadio = document.querySelector('input[name="input_source"]:checked');
-if (selectedRadio) {
-    toggleInputSource(selectedRadio.value);
-}
+        const fieldMap = {
+            'req':          data.jira_requirement_key || '',
+            'username':     data.jira_username        || '',
+            'baseurl':      data.jira_url             || '',
+            'project_key':  data.project_key          || '',
+            'version_name': data.version_name         || '',
+            'folder_path':  data.xray_folder_path     || '',
+            'tc_amount':    data.num_test_cases        || 1,
+        };
+
+        Object.entries(fieldMap).forEach(([name, value]) => {
+            const el = document.querySelector(`[name="${name}"]`);
+            if (el) {
+                el.value = value;
+                if (value) {
+                    el.classList.add('border-success');
+                    setTimeout(() => el.classList.remove('border-success'), 2000);
+                }
+            }
+        });
+    }
+
+    function showSettingsStatus(type, message) {
+        const status = document.getElementById('settingsStatus');
+        const cls = type === 'success' ? 'text-success'
+                  : type === 'error'   ? 'text-danger'
+                  :                      'text-secondary';
+        status.className  = `small ${cls}`;
+        status.innerHTML  = message;
+        setTimeout(() => { status.innerHTML = ''; }, 4000);
+    }
+
+    // Auto-load on page ready
+    document.addEventListener('DOMContentLoaded', function () {
+        loadJiraXraySettings();
+    });
+
+    /**
+     * Toggle between Jira key and User Story input modes.
+     */
+    function toggleInputSource(value) {
+        const fieldReq       = document.getElementById('field_req');
+        const fieldUserStory = document.getElementById('field_user_story');
+        const reqInput       = fieldReq.querySelector('input[name="req"]');
+        const storyTextarea  = fieldUserStory.querySelector('textarea[name="user_story"]');
+
+        if (value === 'user_story') {
+            fieldReq.classList.add('d-none');
+            fieldUserStory.classList.remove('d-none');
+            reqInput.removeAttribute('required');
+            storyTextarea.setAttribute('required', 'required');
+        } else {
+            fieldReq.classList.remove('d-none');
+            fieldUserStory.classList.add('d-none');
+            reqInput.setAttribute('required', 'required');
+            storyTextarea.removeAttribute('required');
+        }
+    }
+
+    // Show spinner on submit
+    document.getElementById('testForm').addEventListener('submit', function () {
+        document.getElementById('loading').classList.remove('d-none');
+        this.querySelector('button[type="submit"]').disabled = true;
+    });
+
+    // Restore correct toggle state on page load (after POST validation errors)
+    const selectedRadio = document.querySelector('input[name="input_source"]:checked');
+    if (selectedRadio) {
+        toggleInputSource(selectedRadio.value);
+    }
 </script>
 {% endblock %}
