@@ -158,10 +158,55 @@
                             </button>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Avatar / Emoji</label>
-                        <input type="text" class="form-control" id="fAvatar" placeholder="👤" maxlength="10">
-                    </div>
+<!--                    <div class="col-md-6">-->
+<!--                        <label class="form-label">Avatar / Emoji</label>-->
+<!--                        <input type="text" class="form-control" id="fAvatar" placeholder="👤" maxlength="10">-->
+<!--                    </div>-->
+<div class="col-md-6">
+    <label class="form-label">Avatar / Emoji</label>
+    <div class="avatar-field-wrap" style="position:relative;">
+        <div class="avatar-preview-circle" id="avatarCircle"
+             onclick="toggleEmojiPicker()"
+             style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);
+                    display:flex;align-items:center;justify-content:center;font-size:20px;
+                    cursor:pointer;flex-shrink:0;border:2px solid #e5e7eb;">👤</div>
+        <div onclick="toggleEmojiPicker()"
+             style="flex:1;display:flex;align-items:center;gap:8px;padding:9px 12px;
+                    border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:.9rem;
+                    color:#888;background:white;transition:border-color .2s;"
+             id="emojiTrigger">
+            <span id="chosenEmojiDisplay" style="font-size:20px;">👤</span>
+            <span id="emojiTriggerLabel" style="flex:1;">Click to choose emoji…</span>
+            <span style="font-size:11px;opacity:.5;">▼</span>
+        </div>
+        <input type="hidden" id="fAvatar" value="👤">
+
+        <!-- Picker popup -->
+        <div id="emojiPickerPopup"
+             style="display:none;position:absolute;top:56px;left:0;z-index:9999;
+                    background:white;border:1.5px solid #e5e7eb;border-radius:12px;
+                    box-shadow:0 8px 28px rgba(0,0,0,.13);width:320px;overflow:hidden;">
+            <div style="padding:10px;border-bottom:1px solid #f0f0f0;">
+                <input type="text" id="emojiSearchInput" placeholder="Search emoji…"
+                       oninput="searchEmojis()"
+                       style="width:100%;padding:7px 10px;border:1px solid #e5e7eb;
+                              border-radius:7px;font-size:13px;outline:none;background:#f9f9f9;">
+            </div>
+            <div id="emojiTabsBar"
+                 style="display:flex;gap:2px;padding:8px 10px 0;border-bottom:1px solid #f0f0f0;
+                        overflow-x:auto;scrollbar-width:none;"></div>
+            <div id="emojiGridArea"
+                 style="display:grid;grid-template-columns:repeat(8,1fr);gap:2px;
+                        padding:10px;max-height:220px;overflow-y:auto;scrollbar-width:thin;"></div>
+            <div style="padding:8px 12px;border-top:1px solid #f0f0f0;font-size:12px;
+                        color:#888;display:flex;align-items:center;gap:6px;">
+                <span id="pickerFooterEmoji" style="font-size:20px;">👤</span>
+                <span id="pickerFooterLabel">Select an emoji above</span>
+            </div>
+        </div>
+    </div>
+</div>
+
                     <div class="col-md-3">
                         <label class="form-label">Role</label>
                         <div class="form-check form-switch mt-2">
@@ -699,5 +744,82 @@ function togglePwd(id, btn) {
 }
 
 document.addEventListener('DOMContentLoaded', loadUsers);
+
+/* ═══ EMOJI PICKER ═══ */
+const EMOJI_CATS = [
+  { icon:'😀', label:'Faces',   emojis:['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😷','🤒','🤕'] },
+  { icon:'🧑', label:'People',  emojis:['👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙋','🤷','🤦','💁','🧑‍💻','👩‍💻','👨‍💻','🧑‍🎨','🎅','🤶','🧑‍🏫','👮','🕵️','💂','🥷','👷','🦸','🦹','🧙','👼'] },
+  { icon:'🐶', label:'Animals', emojis:['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦄','🐝','🦋','🐌','🐞','🐢','🐍','🦎','🐙','🦑','🐡','🐠','🐟','🐬','🐳','🦈','🦭','🐘','🦒','🦘','🐎','🐈','🐕','🦜','🕊️','🐇','🦔'] },
+  { icon:'🍕', label:'Food',    emojis:['🍕','🍔','🍟','🌭','🧇','🥞','🥓','🍳','🧀','🥗','🌮','🌯','🍝','🍜','🍣','🍱','🥟','🍤','🧁','🎂','🍰','🍩','🍪','🍫','🍬','🍭','🧃','☕','🍵','🍺','🥂','🍷','🍹','🧊'] },
+  { icon:'⚽', label:'Sports',  emojis:['⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','🎽','🛹','⛸️','🏋️','🤸','🏄','🚴','🏆','🥇','🥈','🥉','🏅'] },
+  { icon:'💡', label:'Objects', emojis:['💡','🔦','💎','🔮','🪄','🎈','🎉','🎁','🎨','🎬','🎤','🎧','🎵','🎮','🕹️','🎲','🧩','🎯','🔑','🗝️','🔧','⚙️','🔬','🔭','📱','💻','🖥️','🖨️','⌨️','🖱️','📷','📸','📹','🎥','📺','📻','🎙️','📡','🔋','🪫','💡','🔌','💾','💿','📀','📀','🖊️','✏️','📝','📚','📖','📱','📞','☎️','📟','📠'] },
+  { icon:'❤️', label:'Symbols', emojis:['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','💕','💞','💓','💗','💖','💘','💝','☮️','⭐','🌟','✨','💫','⚡','🔥','🌈','☀️','🌙','⛄','🌊','🌸','🌺','🌻','🌹','🍀','🎵','🎶','💯','✅','❌','⚠️','🆕','🆒','🔝','🔜','♻️'] },
+];
+
+let _emojiCat = 0;
+
+function _buildEmojiTabs() {
+  document.getElementById('emojiTabsBar').innerHTML = EMOJI_CATS.map((c,i) =>
+    `<button onclick="selectEmojiTab(${i})" id="etab-${i}"
+      style="font-size:18px;padding:5px 8px;border:none;background:${i===0?'#eef0ff':'none'};
+             cursor:pointer;border-radius:6px;opacity:${i===0?'1':'.6'};flex-shrink:0;"
+      title="${c.label}">${c.icon}</button>`).join('');
+}
+
+function _renderEmojiGrid(emojis) {
+  document.getElementById('emojiGridArea').innerHTML = emojis.map(e =>
+    `<button onclick="pickEmoji('${e}')" title="${e}"
+      style="font-size:22px;padding:5px;border:none;background:none;cursor:pointer;
+             border-radius:6px;line-height:1;" onmouseover="this.style.background='#eef0ff'"
+             onmouseout="this.style.background='none'">${e}</button>`).join('');
+}
+
+function selectEmojiTab(i) {
+  _emojiCat = i;
+  EMOJI_CATS.forEach((_,j) => {
+    const b = document.getElementById(`etab-${j}`);
+    b.style.background = j===i ? '#eef0ff' : 'none';
+    b.style.opacity    = j===i ? '1' : '.6';
+  });
+  document.getElementById('emojiSearchInput').value = '';
+  _renderEmojiGrid(EMOJI_CATS[i].emojis);
+}
+
+function searchEmojis() {
+  const q = document.getElementById('emojiSearchInput').value.toLowerCase();
+  if (!q) { _renderEmojiGrid(EMOJI_CATS[_emojiCat].emojis); return; }
+  const all = EMOJI_CATS.flatMap(c => c.emojis);
+  _renderEmojiGrid(all.filter(e =>
+    EMOJI_CATS.find(c=>c.emojis.includes(e))?.label.toLowerCase().includes(q)));
+}
+
+function pickEmoji(emoji) {
+  document.getElementById('fAvatar').value             = emoji;
+  document.getElementById('avatarCircle').textContent  = emoji;
+  document.getElementById('chosenEmojiDisplay').textContent = emoji;
+  document.getElementById('emojiTriggerLabel').textContent  = 'Emoji selected';
+  document.getElementById('pickerFooterEmoji').textContent  = emoji;
+  document.getElementById('pickerFooterLabel').textContent  = 'Selected!';
+  toggleEmojiPicker();
+}
+
+function toggleEmojiPicker() {
+  const popup = document.getElementById('emojiPickerPopup');
+  const isOpen = popup.style.display !== 'none';
+  popup.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) document.getElementById('emojiSearchInput').focus();
+}
+
+document.addEventListener('click', e => {
+  const wrap  = document.querySelector('.avatar-field-wrap');
+  const popup = document.getElementById('emojiPickerPopup');
+  if (wrap && !wrap.contains(e.target)) popup.style.display = 'none';
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  _buildEmojiTabs();
+  _renderEmojiGrid(EMOJI_CATS[0].emojis);
+});
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.2/dist/index.min.js"></script>
 {% endblock %}

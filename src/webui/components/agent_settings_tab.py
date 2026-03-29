@@ -38,10 +38,6 @@ async def update_mcp_server(mcp_file: str, webui_manager: WebuiManager):
 
 # ── Build a pure HTML table with optional green row highlight ───────────────
 def _build_html_table(table_data: list, highlighted_name: str = "") -> str:
-    """
-    Renders the saved-settings list as a styled HTML table.
-    The row whose Name column matches `highlighted_name` gets a green background.
-    """
     headers = ["ID", "Name", "LLM Provider", "Model", "Description", "Last Updated"]
 
     header_html = "".join(f"<th>{h}</th>" for h in headers)
@@ -185,6 +181,81 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
         gr.Markdown("---")
         gr.Markdown("### 💾 Agent Settings Database Management")
 
+        # ── Inject button styles ─────────────────────────────────────────────
+        gr.HTML("""
+        <style>
+          /* ── base reset for all icon buttons ── */
+          .icon-btn button {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 42px !important;
+            min-width: 42px !important;
+            height: 42px !important;
+            padding: 0 !important;
+            border-radius: 10px !important;
+            font-size: 20px !important;
+            line-height: 1 !important;
+            border: 1.5px solid transparent !important;
+            cursor: pointer !important;
+            transition: all 0.18s ease !important;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important;
+          }
+
+          /* ── Save 💾 — soft blue ── */
+          .btn-save button {
+            background: #e8f0fe !important;
+            border-color: #aac3f5 !important;
+            color: #1a56db !important;
+          }
+          .btn-save button:hover {
+            background: #1a56db !important;
+            border-color: #1a56db !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(26,86,219,0.35) !important;
+            transform: translateY(-1px) scale(1.06) !important;
+          }
+          .btn-save button:active {
+            transform: translateY(0) scale(0.97) !important;
+            box-shadow: 0 1px 4px rgba(26,86,219,0.2) !important;
+          }
+
+          /* ── Load 📂 — soft green ── */
+          .btn-load button {
+            background: #e6f9f0 !important;
+            border-color: #6fcf97 !important;
+            color: #1a7a4a !important;
+          }
+          .btn-load button:hover {
+            background: #1a7a4a !important;
+            border-color: #1a7a4a !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(26,122,74,0.35) !important;
+            transform: translateY(-1px) scale(1.06) !important;
+          }
+          .btn-load button:active {
+            transform: translateY(0) scale(0.97) !important;
+          }
+
+          /* ── Delete 🗑️ — soft red ── */
+          .btn-delete button {
+            background: #fdecea !important;
+            border-color: #f5aca6 !important;
+            color: #c0392b !important;
+          }
+          .btn-delete button:hover {
+            background: #c0392b !important;
+            border-color: #c0392b !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(192,57,43,0.35) !important;
+            transform: translateY(-1px) scale(1.06) !important;
+          }
+          .btn-delete button:active {
+            transform: translateY(0) scale(0.97) !important;
+          }
+        </style>
+        """)
+
         with gr.Group():
             gr.Markdown("#### Save Current Settings")
             with gr.Row():
@@ -198,7 +269,11 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
                     placeholder="Brief description",
                     scale=2
                 )
-            save_setting_btn = gr.Button("💾 Save Agent Settings", variant="primary")
+                # 💾 Save — soft blue, glows on hover
+                save_setting_btn = gr.Button(
+                    "💾", size="sm", scale=0, min_width=42,
+                    elem_classes=["icon-btn", "btn-save"]
+                )
             save_setting_status = gr.Markdown(visible=False)
 
         with gr.Group():
@@ -210,25 +285,29 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
                     interactive=True,
                     scale=3
                 )
-                refresh_settings_btn = gr.Button("🔄 Refresh", scale=1)
 
             setting_info = gr.Markdown(visible=False)
 
             with gr.Row():
-                load_setting_btn = gr.Button("📂 Load Selected", variant="primary")
-                delete_setting_btn = gr.Button("🗑️ Delete Selected", variant="stop")
+                # 📂 Load — soft green, glows on hover
+                load_setting_btn = gr.Button(
+                    "📂", size="sm",
+                    elem_classes=["icon-btn", "btn-load"]
+                )
+                # 🗑️ Delete — soft red, glows on hover
+                delete_setting_btn = gr.Button(
+                    "🗑️", size="sm",
+                    elem_classes=["icon-btn", "btn-delete"]
+                )
 
             load_setting_status = gr.Markdown(visible=False)
 
         with gr.Group():
             gr.Markdown("#### Your Saved Agent Settings")
-            # ✅ Pure HTML table — full control over row colors
             settings_table_html = gr.HTML(value=_build_html_table([]))
 
         settings_ids_state = gr.State(value={})
-        # Stores raw table_data rows for re-rendering with highlight
         table_data_state = gr.State(value=[])
-        # Stores the currently loaded setting name for green highlight
         loaded_name_state = gr.State(value="")
 
         # ── Helpers ─────────────────────────────────────────────────────────
@@ -249,10 +328,6 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             return user_id
 
         def _do_refresh(user_id):
-            """
-            Returns (dropdown_update, id_mapping, table_rows, status_update).
-            table_rows is a plain list (not a gr.update) so callers can store it.
-            """
             if not user_id:
                 return (
                     gr.update(choices=[], value=None), {},
@@ -308,24 +383,46 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
                 gr.update(visible=False)
             )
 
-        # ── Refresh button ───────────────────────────────────────────────────
+        # ── Auto-load on page open (replaces Refresh button) ─────────────────
         # outputs: [dropdown, ids_state, table_html, table_data_state,
-        #           load_status, loaded_name_state]
+        #           load_status, loaded_name_state, setting_info]
         def refresh_settings_list(request: gr.Request = None):
             user_id = _get_user_id(request)
             dd, ids, rows, status = _do_refresh(user_id)
+
+            # Auto-select first item and show its info panel
+            first_name = rows[0][1] if rows else ""
+            info_update = gr.update(visible=False)
+            if first_name and user_id:
+                result = auth_manager.load_agent_setting(first_name, user_id)
+                if result.get("success"):
+                    setting_data = result.get("setting", {})
+                    if isinstance(setting_data, str):
+                        try:
+                            setting_data = json.loads(setting_data)
+                        except json.JSONDecodeError:
+                            setting_data = {}
+                    s = setting_data
+                    info_update = gr.update(
+                        visible=True,
+                        value=(
+                            f"**Provider:** {s.get('llm_provider', 'N/A')} | "
+                            f"**Model:** {s.get('llm_model_name', 'N/A')}"
+                            f"**Description:** {s.get('description', 'No description')}"
+                        )
+                    )
+
             return (
-                dd,                                     # settings_dropdown
-                ids,                                    # settings_ids_state
+                dd,                                        # settings_dropdown (value=first item)
+                ids,                                       # settings_ids_state
                 gr.update(value=_build_html_table(rows)),  # settings_table_html
-                rows,                                   # table_data_state
-                status,                                 # load_setting_status
-                "",                                     # loaded_name_state (reset highlight)
+                rows,                                      # table_data_state
+                status,                                    # load_setting_status
+                "",                                        # loaded_name_state
+                info_update,                               # setting_info
             )
 
         # ── SAVE ─────────────────────────────────────────────────────────────
-        # outputs: [save_status, dropdown, ids_state, table_html,
-        #           table_data_state, load_status, loaded_name_state]
         async def save_agent_setting_to_db(
                 setting_name, description,
                 override_prompt, extend_prompt, mcp_config,
@@ -381,29 +478,19 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             return (
                 save_status,
                 dd, ids,
-                gr.update(value=_build_html_table(rows)),  # table_html
-                rows,                                       # table_data_state
-                gr.update(visible=False),                   # load_status
-                "",                                         # loaded_name_state
+                gr.update(value=_build_html_table(rows)),
+                rows,
+                gr.update(visible=False),
+                "",
             )
 
         # ── LOAD ──────────────────────────────────────────────────────────────
-        # outputs (22):
-        #  [0]     load_status
-        #  [1-14]  14 component updates
-        #  [15]    settings_dropdown  → reset to None ✅
-        #  [16]    settings_ids_state
-        #  [17]    settings_table_html  → green row ✅
-        #  [18]    table_data_state
-        #  [19]    load_setting_status (refresh part)
-        #  [20]    loaded_name_state   → stores loaded name
         _EMPTY = tuple([gr.update()] * 14)
 
         def load_agent_setting_from_db(setting_name, settings_ids, request: gr.Request = None):
             user_id = _get_user_id(request)
             dd, ids, rows, _ = _do_refresh(user_id)
 
-            # ✅ Reset dropdown to None
             choices = dd.get("choices", []) if isinstance(dd, dict) else []
             dd_reset = gr.update(choices=choices, value=None)
 
@@ -438,7 +525,6 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
 
             return (
                 gr.update(visible=True, value=f"✅ Settings '{setting_name}' loaded!"),
-                # 14 component updates
                 gr.update(value=s.get('override_system_prompt', '')),
                 gr.update(value=s.get('extend_system_prompt', '')),
                 gr.update(value=s.get('mcp_server_config', '')),
@@ -453,20 +539,15 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
                 gr.update(value=s.get('max_actions', 10)),
                 gr.update(value=s.get('max_input_tokens', 128000)),
                 gr.update(value=s.get('tool_calling_method', 'auto')),
-                # ✅ dropdown reset to None
                 dd_reset,
                 ids,
-                # ✅ HTML table with green row
                 gr.update(value=_build_html_table(rows, setting_name)),
                 rows,
                 gr.update(visible=False),
-                # ✅ store loaded name for subsequent refreshes
                 setting_name,
             )
 
         # ── DELETE ────────────────────────────────────────────────────────────
-        # outputs: [load_status, dropdown, ids_state, table_html,
-        #           table_data_state, load_status2, loaded_name_state]
         def delete_agent_setting_from_db(setting_name, settings_ids, request: gr.Request = None):
             user_id = _get_user_id(request)
 
@@ -500,10 +581,10 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             return (
                 gr.update(visible=True, value=status_msg),
                 dd, ids,
-                gr.update(value=_build_html_table(rows, "")),  # clear green
+                gr.update(value=_build_html_table(rows, "")),
                 rows,
                 gr.update(visible=False),
-                "",  # clear loaded_name_state
+                "",
             )
 
         # ── Show info on dropdown change ──────────────────────────────────────
@@ -534,22 +615,42 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
 
         # ── Wire up events ────────────────────────────────────────────────────
 
-        # Refresh button
-        # outputs: [dropdown, ids_state, table_html, table_data_state,
-        #           load_status, loaded_name_state]
-        refresh_settings_btn.click(
+        # ─── outputs list reused by both load-triggers ──────────────────────
+        _auto_load_outputs = [
+            settings_dropdown,
+            settings_ids_state,
+            settings_table_html,
+            table_data_state,
+            load_setting_status,
+            loaded_name_state,
+            setting_info,
+        ]
+
+        # ✅ Trigger 1 — fires on initial page load (covers direct page open)
+        # Uses a hidden Number that Gradio renders on startup; its "change" event
+        # fires immediately, calling refresh_settings_list before the user does anything.
+        _init_flag = gr.Number(value=1, visible=False)
+        _init_flag.change(
             fn=refresh_settings_list,
             inputs=[],
-            outputs=[
-                settings_dropdown, settings_ids_state,
-                settings_table_html, table_data_state,
-                load_setting_status, loaded_name_state,
-            ]
+            outputs=_auto_load_outputs,
         )
 
+        # ✅ Trigger 2 — also register on the root Blocks.load so it fires when
+        # the session connects, giving a second reliable trigger path.
+        try:
+            from gradio.context import Context
+            _root = Context.root_block
+            if _root is not None:
+                _root.load(
+                    fn=refresh_settings_list,
+                    inputs=[],
+                    outputs=_auto_load_outputs,
+                )
+        except Exception as _e:
+            logger.warning(f"root_block.load() wiring skipped: {_e}")
+
         # Save
-        # outputs: [save_status, dropdown, ids_state, table_html,
-        #           table_data_state, load_status, loaded_name_state]
         save_setting_btn.click(
             fn=save_agent_setting_to_db,
             inputs=[
@@ -567,25 +668,23 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             ]
         )
 
-        # Load — 21 outputs
+        # Load
         load_setting_btn.click(
             fn=load_agent_setting_from_db,
             inputs=[settings_dropdown, settings_ids_state],
             outputs=[
                 load_setting_status,
-                # 14 UI components
                 override_system_prompt, extend_system_prompt, mcp_server_config,
                 llm_provider, llm_model_name, llm_temperature, use_vision,
                 ollama_num_ctx, llm_base_url, llm_api_key,
                 max_steps, max_actions, max_input_tokens, tool_calling_method,
-                # ✅ dropdown reset + table with green row
                 settings_dropdown, settings_ids_state,
                 settings_table_html, table_data_state,
                 load_setting_status, loaded_name_state,
             ]
         )
 
-        # Delete — 7 outputs
+        # Delete
         delete_setting_btn.click(
             fn=delete_agent_setting_from_db,
             inputs=[settings_dropdown, settings_ids_state],
@@ -604,6 +703,6 @@ def create_agent_settings_tab(webui_manager: WebuiManager, auth_manager=None):
             outputs=[setting_info]
         )
 
-        return refresh_settings_list, settings_dropdown, settings_ids_state, settings_table_html, load_setting_status
+        return refresh_settings_list, settings_dropdown, settings_ids_state, settings_table_html, load_setting_status, loaded_name_state, setting_info
 
     return None
