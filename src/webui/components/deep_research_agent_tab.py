@@ -319,7 +319,7 @@ async def stop_deep_research(webui_manager: WebuiManager) -> Dict[Component, Any
         # We yield an intermediate "Stopping..." state. The final reset is done by run_deep_research.
 
         # Try to show the final report if available after stopping
-        await asyncio.sleep(1.5)  # Give agent a moment to write final files potentially
+        await asyncio.sleep(1.5)  # Give agent a moment to write final playwrightMcp potentially
         report_file_path = None
         if task_id and base_save_dir:
             report_file_path = os.path.join(base_save_dir, str(task_id), "report.md")

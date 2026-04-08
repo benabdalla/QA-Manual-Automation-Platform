@@ -1,5 +1,5 @@
 """
-Helper module to load external CSS and JavaScript files
+Helper module to load external CSS and JavaScript playwrightMcp
 Keeps Python code clean by separating styles and scripts
 """
 

@@ -1,4 +1,4 @@
-# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL playwrightMcp
 __pycache__/
 *.py[cod]
 *$py.class
@@ -95,7 +95,7 @@ __pypackages__/
 celerybeat-schedule
 celerybeat.pid
 
-# SageMath parsed files
+# SageMath parsed playwrightMcp
 *.sage.py
 
 # Environments
@@ -160,7 +160,7 @@ cython_debug/
 logs/
 *.log
 
-# OS generated files
+# OS generated playwrightMcp
 .DS_Store
 .DS_Store?
 ._*
@@ -193,7 +193,7 @@ credentials.json
 config.local.py
 settings.local.py
 
-# Temporary files
+# Temporary playwrightMcp
 tmp/
 temp/
 *.tmp
@@ -202,7 +202,7 @@ temp/
 *.swp
 *~
 
-# Flask session files
+# Flask session playwrightMcp
 flask_session/
 
 # Upload directories (customize as needed)

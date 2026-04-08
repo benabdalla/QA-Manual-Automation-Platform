@@ -18,7 +18,7 @@ def encode_image(img_path):
 
 
 def get_latest_files(directory: str, file_types: list = ['.webm', '.zip']) -> Dict[str, Optional[str]]:
-    """Get the latest recording and trace files"""
+    """Get the latest recording and trace playwrightMcp"""
     latest_files: Dict[str, Optional[str]] = {ext: None for ext in file_types}
 
     if not os.path.exists(directory):
@@ -30,7 +30,7 @@ def get_latest_files(directory: str, file_types: list = ['.webm', '.zip']) -> Di
             matches = list(Path(directory).rglob(f"*{file_type}"))
             if matches:
                 latest = max(matches, key=lambda p: p.stat().st_mtime)
-                # Only return files that are complete (not being written)
+                # Only return playwrightMcp that are complete (not being written)
                 if time.time() - latest.stat().st_mtime > 1.0:
                     latest_files[file_type] = str(latest)
         except Exception as e:
