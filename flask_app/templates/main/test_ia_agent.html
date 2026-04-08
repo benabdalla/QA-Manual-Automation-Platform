@@ -1,0 +1,935 @@
+{% extends "base.html" %}
+{% block title %}AI Agent Test — QA Platform{% endblock %}
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:         #f4f6fb;
+  --bg2:        #edf0f7;
+  --bg3:        #e5e9f2;
+  --surface:    #ffffff;
+  --surface2:   #f8f9fc;
+  --border:     #e2e6f0;
+  --border2:    #cdd3e3;
+  --text:       #111827;
+  --text2:      #374151;
+  --muted:      #6b7280;
+  --muted2:     #9ca3af;
+  --accent:     #2563eb;
+  --accent-bg:  rgba(37,99,235,.07);
+  --accent-bd:  rgba(37,99,235,.22);
+  --green:      #16a34a;
+  --green-bg:   rgba(22,163,74,.07);
+  --green-bd:   rgba(22,163,74,.22);
+  --red:        #dc2626;
+  --red-bg:     rgba(220,38,38,.07);
+  --red-bd:     rgba(220,38,38,.22);
+  --amber:      #d97706;
+  --amber-bg:   rgba(217,119,6,.07);
+  --amber-bd:   rgba(217,119,6,.22);
+  --violet:     #7c3aed;
+  --violet-bg:  rgba(124,58,237,.07);
+  --violet-bd:  rgba(124,58,237,.22);
+  --cyan:       #0891b2;
+  --cyan-bg:    rgba(8,145,178,.07);
+  --cyan-bd:    rgba(8,145,178,.22);
+  --sans:       'DM Sans', sans-serif;
+  --mono:       'DM Mono', monospace;
+  --serif:      'DM Serif Display', serif;
+  --r-sm:       8px;
+  --r-md:       12px;
+  --r-lg:       16px;
+  --r-xl:       20px;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow:     0 4px 16px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+  --shadow-lg:  0 12px 40px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.05);
+  --glow-blue:  0 0 16px rgba(37,99,235,.15);
+  --glow-green: 0 0 16px rgba(22,163,74,.15);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+button { font-family: var(--sans); cursor: pointer; }
+a { text-decoration: none; }
+
+/* ══ Scrollbars ═══════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+* { scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+
+/* ══ Layout ═══════════════════════════════════════════════════ */
+.shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* ── Topbar ── */
+.topbar {
+  height: 58px; flex-shrink: 0; padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative; z-index: 10;
+  box-shadow: var(--shadow-sm);
+}
+.topbar::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--violet) 50%, var(--cyan) 100%);
+  opacity: .5;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--violet));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--glow-blue), 0 2px 8px rgba(0,0,0,.4);
+  position: relative; overflow: hidden;
+}
+.brand-mark::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.40) 0%, transparent 60%);
+}
+.brand-mark i { color: #fff; font-size: 14px; position: relative; }
+.brand-name { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -.01em; }
+.brand-sub  { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
+
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+.btn {
+  border-radius: var(--r-sm); padding: 7px 14px; font-size: 12px; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all .18s cubic-bezier(.4,0,.2,1); border: 1px solid transparent;
+  letter-spacing: .01em;
+}
+.btn-ghost {
+  background: transparent; border-color: var(--border2); color: var(--text2);
+}
+.btn-ghost:hover { background: var(--bg2); border-color: var(--border2); color: var(--text); }
+.btn-primary {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(79,142,247,.35);
+}
+.btn-primary:hover { background: #1d4ed8; box-shadow: 0 4px 16px rgba(37,99,235,.35); transform: translateY(-1px); }
+.btn-sm { padding: 5px 10px; font-size: 11px; border-radius: 7px; }
+
+/* ── Tabbar ── */
+.tabbar {
+  display: none; flex-shrink: 0;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 24px; gap: 0;
+}
+.tabbar.show { display: flex; }
+.tabitem {
+  padding: 15px 18px; font-size: 12px; font-weight: 500; color: var(--muted);
+  border-bottom: 2px solid transparent; cursor: pointer; margin-bottom: -1px;
+  display: flex; align-items: center; gap: 8px; transition: all .15s;
+  position: relative;
+}
+.tabitem:hover { color: var(--text2); }
+.tabitem.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Main ── */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 280px; flex-shrink: 0;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sb-head {
+  padding: 18px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.sb-title {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1.2px; color: var(--muted); font-family: var(--mono);
+}
+.sb-count {
+  margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent-bg); color: var(--accent);
+  border: 1px solid var(--accent-bd);
+  border-radius: 20px; padding: 3px 10px; font-size: 11px; font-family: var(--mono);
+}
+.sb-count-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+
+.sb-search { padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sb-search input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 8px 12px;
+  font-size: 12px; font-family: var(--sans); color: var(--text);
+  outline: none; transition: all .15s;
+}
+.sb-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.sb-search input::placeholder { color: var(--muted2); }
+
+.sb-list { flex: 1; overflow-y: auto; padding: 6px 8px; }
+
+.exec-item {
+  padding: 10px 10px; border-radius: var(--r-sm); cursor: pointer;
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 3px;
+  transition: all .14s; border: 1px solid transparent;
+  position: relative;
+}
+.exec-item:hover { background: var(--bg2); border-color: var(--border2); }
+.exec-item.active {
+  background: var(--accent-bg); border-color: var(--accent-bd);
+}
+.exec-item.active::before {
+  content: ''; position: absolute; left: 0; top: 6px; bottom: 6px;
+  width: 2px; border-radius: 2px; background: var(--accent);
+}
+.exec-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+  box-shadow: 0 0 5px rgba(0,0,0,.15);
+}
+.exec-id { font-family: var(--mono); font-size: 11px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exec-tags { display: flex; gap: 4px; margin-top: 5px; }
+.tag {
+  font-size: 9px; padding: 2px 7px; border-radius: 10px;
+  font-family: var(--mono); font-weight: 500; text-transform: uppercase; letter-spacing: .5px;
+}
+.tag-gif  { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-bd); }
+.tag-json { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-bd); }
+
+.sb-foot {
+  flex-shrink: 0; padding: 10px 14px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2);
+}
+.sb-page-info { font-size: 10px; color: var(--muted); font-family: var(--mono); }
+.pager { display: flex; gap: 3px; }
+.pager-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-size: 12px; transition: all .14s;
+}
+.pager-btn:hover { background: var(--bg3); color: var(--text); }
+.pager-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(79,142,247,.4); }
+
+/* ── Content ── */
+.content { flex: 1; overflow-y: auto; background: var(--bg); }
+
+/* ── Empty state ── */
+.empty {
+  height: 100%; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 14px; color: var(--muted);
+}
+.empty-icon {
+  width: 72px; height: 72px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center;
+}
+.empty-icon i { font-size: 26px; color: var(--muted2); }
+.empty-title { font-size: 15px; color: var(--text2); font-weight: 500; }
+.empty-sub { font-size: 12px; color: var(--muted); }
+
+/* ══ REPORT ═══════════════════════════════════════════════════ */
+.report { padding: 28px 32px; max-width: 1020px; margin: 0 auto; animation: fadeIn .35s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+/* ── Hero card ── */
+.hero-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 26px 30px; margin-bottom: 20px;
+  box-shadow: var(--shadow); position: relative; overflow: hidden;
+}
+.hero-card::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--violet), var(--cyan));
+}
+.hero-card::after {
+  content: ''; position: absolute; top: -60px; right: -60px;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(79,142,247,.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.hero-label {
+  font-size: 10px; font-family: var(--mono); text-transform: uppercase;
+  letter-spacing: 1.2px; color: var(--muted); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.hero-label::before {
+  content: ''; display: inline-block; width: 16px; height: 1px;
+  background: var(--muted2);
+}
+.hero-task { font-family: var(--serif); font-size: 24px; color: var(--text); line-height: 1.3; font-style: italic; }
+.hero-id {
+  font-family: var(--mono); font-size: 10px; color: var(--muted2); margin-top: 10px;
+  display: flex; align-items: center; gap: 6px;
+}
+.hero-id-copy {
+  padding: 2px 7px; border-radius: 5px; font-size: 9px; font-family: var(--mono);
+  background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+  cursor: pointer; transition: all .14s;
+}
+.hero-id-copy:hover { background: var(--accent-bg); border-color: var(--accent-bd); color: var(--accent); }
+
+.status-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  border-radius: 20px; padding: 6px 16px; font-size: 12px; font-weight: 600;
+  border: 1px solid; flex-shrink: 0; backdrop-filter: blur(8px);
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* ── Stats grid ── */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 18px 18px 16px;
+  box-shadow: var(--shadow-sm); transition: all .22s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  opacity: 0; transition: opacity .22s;
+}
+.stat-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); border-color: var(--border2); }
+.stat-card:hover::before { opacity: 1; }
+.stat-card.blue::before  { background: var(--accent); }
+.stat-card.green::before { background: var(--green); }
+.stat-card.violet::before{ background: var(--violet); }
+.stat-card.amber::before { background: var(--amber); }
+.stat-icon {
+  width: 30px; height: 30px; border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 12px;
+}
+.stat-val { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--text); line-height: 1; }
+.stat-lbl { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+/* ── Section card ── */
+.section-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); margin-bottom: 16px;
+  box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.section-head {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2);
+}
+.section-title {
+  font-size: 12px; font-weight: 600; color: var(--text2);
+  display: flex; align-items: center; gap: 9px;
+}
+.section-icon {
+  width: 24px; height: 24px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center; font-size: 11px;
+  flex-shrink: 0;
+}
+.section-body { padding: 20px; }
+
+/* ── GIF ── */
+.gif-img {
+  width: 100%; border-radius: var(--r-sm); border: 1px solid var(--border);
+  display: block; box-shadow: var(--shadow-sm);
+}
+
+/* ── JSON Report ── */
+.json-report { display: flex; flex-direction: column; gap: 0; }
+
+.kv-table { width: 100%; border-collapse: collapse; }
+.kv-table tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+.kv-table tr:last-child { border-bottom: none; }
+.kv-table tr:hover { background: var(--bg2); }
+.kv-table td { padding: 10px 14px; vertical-align: top; }
+.kv-key {
+  width: 160px; font-family: var(--mono); font-size: 11px;
+  color: var(--muted); white-space: nowrap; font-weight: 500;
+}
+.kv-val { font-size: 12px; color: var(--text2); word-break: break-word; }
+.kv-val.mono { font-family: var(--mono); font-size: 11px; }
+.kv-null { color: var(--muted2); font-style: italic; font-size: 11px; }
+.kv-wrap {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r-sm); overflow: hidden;
+}
+
+.json-tree {
+  background: var(--bg); border-radius: var(--r-sm); padding: 18px;
+  font-family: var(--mono); font-size: 11px; line-height: 1.8;
+  overflow-x: auto; border: 1px solid var(--border);
+}
+.j-key  { color: var(--accent); }
+.j-str  { color: var(--green); }
+.j-num  { color: var(--amber); }
+.j-bool { color: var(--violet); font-weight: 600; }
+.j-null { color: var(--muted2); font-style: italic; }
+
+/* ── Toggle buttons ── */
+.toggle-row {
+  display: flex; align-items: center; gap: 6px;
+}
+.toggle-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); border-radius: var(--r-sm);
+  padding: 5px 12px; font-size: 11px; font-family: var(--mono);
+  transition: all .14s;
+}
+.toggle-btn:hover { background: var(--bg2); color: var(--text2); border-color: var(--border2); }
+.toggle-btn.on {
+  background: var(--accent-bg); border-color: var(--accent-bd);
+  color: var(--accent);
+}
+
+/* ══ TIMELINE ═════════════════════════════════════════════════ */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.tl-item {
+  display: flex; gap: 16px; padding-bottom: 22px;
+  animation: fadeUp .22s ease both;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+.tl-spine {
+  display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 30px;
+}
+.tl-num {
+  width: 30px; height: 30px; border-radius: var(--r-sm); font-size: 10px;
+  font-family: var(--mono); font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  border: 1px solid; position: relative;
+}
+.tl-line {
+  flex: 1; width: 1px; margin: 5px 0; min-height: 12px;
+  background: linear-gradient(to bottom, var(--border2), var(--border));
+}
+.tl-body { flex: 1; min-width: 0; }
+.tl-section { margin-bottom: 8px; }
+.tl-section-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px;
+  font-family: var(--mono); font-weight: 700; margin-bottom: 5px;
+  display: flex; align-items: center; gap: 5px;
+}
+.tl-block {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 11px 14px; font-size: 12px; color: var(--text2); line-height: 1.7;
+}
+.tl-block.mono {
+  font-family: var(--mono); font-size: 10.5px;
+  white-space: pre-wrap; word-break: break-all; color: var(--accent);
+}
+.tl-block.result { color: var(--green); background: var(--green-bg); border-color: var(--green-bd); }
+.tl-block.error  { color: var(--red); background: var(--red-bg); border-color: var(--red-bd); }
+
+/* ── Step pager ── */
+.step-pager-row { display: flex; align-items: center; gap: 6px; }
+.sp-btn {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-size: 16px; transition: all .14s;
+  display: flex; align-items: center; justify-content: center;
+}
+.sp-btn:hover { background: var(--bg2); color: var(--text); border-color: var(--border2); }
+.sp-lbl {
+  font-size: 11px; color: var(--muted); font-family: var(--mono);
+  min-width: 90px; text-align: center;
+}
+
+/* ── Badge ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 10px; font-size: 10px;
+  font-family: var(--mono); font-weight: 500;
+}
+
+/* ── Agent iframe panel ── */
+#tab-agent .iframe-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 20px; gap: 0;
+}
+.live-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--green); font-family: var(--mono);
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+  box-shadow: 0 0 5px rgba(22,163,74,.4); animation: live-pulse 1.4s ease infinite;
+}
+@keyframes live-pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── Copy toast ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(40px);
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text2);
+  padding: 8px 18px; border-radius: 20px; font-size: 12px; font-family: var(--mono);
+  box-shadow: var(--shadow); opacity: 0; transition: all .25s; pointer-events: none; z-index: 999;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+
+<div class="shell">
+
+<!-- ── Topbar ── -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark"><i class="fas fa-robot"></i></div>
+    <div>
+      <div class="brand-name">AI Agent Test</div>
+      <div class="brand-sub">QA Platform</div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" onclick="switchTab('agent')">
+      <i class="fas fa-terminal"></i> Agent Live
+    </button>
+    <button class="btn btn-primary" onclick="switchTab('history')">
+      <i class="fas fa-history"></i> History
+    </button>
+  </div>
+</div>
+
+<!-- ── Tabbar ── -->
+<div class="tabbar" id="tabbar">
+  <div class="tabitem active" id="tl-history" onclick="switchTab('history')">
+    <i class="fas fa-history"></i> Execution History
+  </div>
+  <div class="tabitem" id="tl-agent" onclick="switchTab('agent')">
+    <i class="fas fa-terminal"></i> Agent Live
+  </div>
+</div>
+
+<!-- ═══ TAB AGENT ══════════════════════════════════════════════ -->
+<div id="tab-agent" class="main" style="flex:1;overflow:hidden;">
+  <div class="iframe-wrap" style="flex:1;padding:20px;display:flex;flex-direction:column;">
+    <div class="section-card" style="height:100%;display:flex;flex-direction:column;">
+      <div class="section-head">
+        <div class="section-title">
+          <div class="section-icon" style="background:var(--green-bg);">
+            <i class="fas fa-circle" style="color:var(--green);font-size:7px;"></i>
+          </div>
+          <span class="live-badge"><span class="live-dot"></span> WebUI Agent Live</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('webui-frame').src+=''">
+          <i class="fas fa-sync-alt"></i> Reload
+        </button>
+      </div>
+      <iframe id="webui-frame" src="http://127.0.0.1:7788"
+        style="flex:1;border:none;width:100%;border-radius:0 0 var(--r-lg) var(--r-lg);"
+        title="QA WebUI">
+      </iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB HISTORY ════════════════════════════════════════════ -->
+<div id="tab-history" class="main" style="display:none;flex:1;overflow:hidden;">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sb-head">
+      <div class="sb-title">Executions</div>
+      <div class="sb-count">
+        <span class="sb-count-dot"></span>
+        <span id="exec-total">0</span> sessions
+      </div>
+    </div>
+    <div class="sb-search">
+      <input type="text" placeholder="🔍  Search sessions…" id="search-input" oninput="filterExec(this.value)">
+    </div>
+    <div class="sb-list" id="hist-list">
+      <div style="padding:36px 20px;text-align:center;color:var(--muted);font-size:12px;">
+        <i class="fas fa-circle-notch fa-spin" style="font-size:22px;display:block;margin-bottom:10px;color:var(--accent);"></i>
+        Loading sessions…
+      </div>
+    </div>
+    <div class="sb-foot">
+      <div class="sb-page-info" id="exec-page-info">—</div>
+      <div class="pager" id="exec-paginator"></div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="hist-content">
+    <div class="empty" style="height:100%;">
+      <div class="empty-icon"><i class="fas fa-folder-open"></i></div>
+      <div class="empty-title">No execution selected</div>
+      <div class="empty-sub">Pick a session from the sidebar to view its report</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .shell -->
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────
+const EXEC_PER_PAGE  = 10;
+const STEPS_PER_PAGE = 5;
+let allExecutions = [], filteredExecs = [];
+let currentExecPage = 1, currentStepPage = 1;
+let currentExec = null, currentSteps = [], currentData = null;
+let showRaw = false;
+
+// ── Toast ────────────────────────────────────────────────────────
+function showToast(msg = 'Copied!') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function copyText(text) {
+  navigator.clipboard?.writeText(text).then(() => showToast('ID copied!'));
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.getElementById('tab-agent').style.display   = tab === 'agent'   ? 'flex' : 'none';
+  document.getElementById('tab-history').style.display = tab === 'history' ? 'flex' : 'none';
+  document.getElementById('tabbar').classList.add('show');
+  document.getElementById('tl-history').className = 'tabitem' + (tab === 'history' ? ' active' : '');
+  document.getElementById('tl-agent').className   = 'tabitem' + (tab === 'agent'   ? ' active' : '');
+  if (tab === 'history' && !allExecutions.length) loadHistory();
+}
+
+// ── Load history ──────────────────────────────────────────────────
+async function loadHistory() {
+  document.getElementById('hist-list').innerHTML =
+    '<div style="padding:36px 20px;text-align:center;color:var(--muted);font-size:12px;"><i class="fas fa-circle-notch fa-spin" style="font-size:22px;display:block;margin-bottom:10px;color:var(--accent);"></i>Loading…</div>';
+  try {
+    const r = await fetch('/api/agent-history');
+    const d = await r.json();
+    allExecutions = d.executions || [];
+    filteredExecs = [...allExecutions];
+    document.getElementById('exec-total').textContent = allExecutions.length;
+    currentExecPage = 1;
+    renderExecList();
+  } catch {
+    document.getElementById('hist-list').innerHTML =
+      '<div style="padding:20px;color:var(--red);font-size:12px;text-align:center;"><i class="fas fa-exclamation-circle" style="margin-bottom:6px;display:block;font-size:18px;"></i>Failed to load sessions</div>';
+  }
+}
+
+function filterExec(q) {
+  const s = q.toLowerCase().trim();
+  filteredExecs = s ? allExecutions.filter(e => e.id.toLowerCase().includes(s)) : [...allExecutions];
+  currentExecPage = 1; renderExecList();
+}
+
+// ── Sidebar list ──────────────────────────────────────────────────
+function renderExecList() {
+  const total = filteredExecs.length;
+  const pages = Math.ceil(total / EXEC_PER_PAGE) || 1;
+  const start = (currentExecPage - 1) * EXEC_PER_PAGE;
+  const page  = filteredExecs.slice(start, start + EXEC_PER_PAGE);
+
+  let html = page.length ? '' :
+    '<div style="padding:28px;text-align:center;color:var(--muted);font-size:12px;">No results found.</div>';
+
+  page.forEach((ex, i) => {
+    const idx      = start + i;
+    const isActive = currentExec?.id === ex.id;
+    const short    = ex.id.substring(0, 8) + '…';
+    const dot      = ex.has_gif ? 'var(--green)' : ex.has_json ? 'var(--accent)' : 'var(--muted2)';
+    html += `
+    <div onclick="selectExecution(${idx})" class="exec-item${isActive ? ' active' : ''}">
+      <div class="exec-dot" style="background:${dot};color:${dot};"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="exec-id" title="${ex.id}">${short}</div>
+        <div class="exec-tags">
+          ${ex.has_gif  ? '<span class="tag tag-gif">GIF</span>'  : ''}
+          ${ex.has_json ? '<span class="tag tag-json">JSON</span>' : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('hist-list').innerHTML = html;
+
+  let pag = '';
+  for (let p = 1; p <= pages; p++)
+    pag += `<button class="pager-btn${p === currentExecPage ? ' on' : ''}" onclick="execPageGo(${p})">${p}</button>`;
+  document.getElementById('exec-paginator').innerHTML = pag;
+  document.getElementById('exec-page-info').textContent =
+    `${start + 1}–${Math.min(start + EXEC_PER_PAGE, total)} / ${total}`;
+}
+
+function execPageGo(p) { currentExecPage = p; renderExecList(); }
+
+// ── Select execution ──────────────────────────────────────────────
+async function selectExecution(idx) {
+  currentExec = filteredExecs[idx];
+  renderExecList();
+  document.getElementById('hist-content').innerHTML =
+    `<div class="empty" style="height:100%;">
+      <i class="fas fa-circle-notch fa-spin" style="font-size:26px;color:var(--accent);"></i>
+      <div style="font-size:13px;color:var(--muted);">Loading report…</div>
+    </div>`;
+  let jsonData = null;
+  if (currentExec.has_json) {
+    try {
+      const r = await fetch(`/api/agent-history/${currentExec.id}/json`);
+      jsonData = await r.json();
+    } catch { jsonData = null; }
+  }
+  currentData = jsonData;
+  showRaw = false;
+  renderReport(currentExec, jsonData);
+}
+
+// ── Render report ─────────────────────────────────────────────────
+function renderReport(ex, data) {
+  const task   = data?.task || data?.input || data?.goal || 'Execution Report';
+  const status = data?.status || data?.result?.status || '—';
+  const steps  = data?.history || data?.steps || data?.actions || [];
+  const model  = data?.model_name || data?.llm_provider || '—';
+  const tokens = data?.total_input_tokens ?? data?.tokens ?? '—';
+  currentSteps = steps; currentStepPage = 1;
+
+  const S = {
+    success:   { c:'var(--green)',  bg:'var(--green-bg)',  bd:'var(--green-bd)',  l:'Success'   },
+    completed: { c:'var(--green)',  bg:'var(--green-bg)',  bd:'var(--green-bd)',  l:'Completed' },
+    failed:    { c:'var(--red)',    bg:'var(--red-bg)',    bd:'var(--red-bd)',    l:'Failed'    },
+    error:     { c:'var(--red)',    bg:'var(--red-bg)',    bd:'var(--red-bd)',    l:'Error'     },
+    running:   { c:'var(--amber)',  bg:'var(--amber-bg)',  bd:'var(--amber-bd)', l:'Running'   },
+  }[status?.toLowerCase()] || { c:'var(--muted)', bg:'var(--bg2)', bd:'var(--border)', l: status };
+
+  const stats = [
+    { color:'violet', icon:'fa-layer-group', ic:'var(--violet)', ib:'var(--violet-bg)', val: steps.length, lbl: 'Steps' },
+    { color:'blue',   icon:'fa-microchip',   ic:'var(--accent)', ib:'var(--accent-bg)', val: esc(model),   lbl: 'Model' },
+    { color:'amber',  icon:'fa-coins',        ic:'var(--amber)',  ib:'var(--amber-bg)',  val: typeof tokens === 'number' ? tokens.toLocaleString() : tokens, lbl: 'Tokens' },
+    { color:'green',  icon:'fa-film',         ic: ex.has_gif ? 'var(--green)' : 'var(--muted2)', ib: ex.has_gif ? 'var(--green-bg)' : 'var(--bg3)', val: ex.has_gif ? 'Yes' : 'No', lbl: 'GIF Replay' },
+  ];
+
+  document.getElementById('hist-content').innerHTML = `
+  <div class="report">
+
+    <!-- Hero -->
+    <div class="hero-card">
+      <div class="hero-top">
+        <div style="flex:1;min-width:0;">
+          <div class="hero-label">Executed Task</div>
+          <div class="hero-task">${esc(task)}</div>
+          <div class="hero-id">
+            <i class="fas fa-fingerprint" style="color:var(--muted2);font-size:10px;"></i>
+            ${ex.id}
+            <button class="hero-id-copy" onclick="copyText('${ex.id}')">copy</button>
+          </div>
+        </div>
+        <div class="status-pill" style="color:${S.c};background:${S.bg};border-color:${S.bd};">
+          <div class="status-dot" style="background:${S.c};"></div>
+          ${S.l}
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      ${stats.map(s => `
+      <div class="stat-card ${s.color}">
+        <div class="stat-icon" style="background:${s.ib};">
+          <i class="fas ${s.icon}" style="color:${s.ic};"></i>
+        </div>
+        <div class="stat-val">${s.val}</div>
+        <div class="stat-lbl">${s.lbl}</div>
+      </div>`).join('')}
+    </div>
+
+    <!-- JSON Report -->
+    ${data ? `
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-title">
+          <div class="section-icon" style="background:var(--accent-bg);">
+            <i class="fas fa-file-code" style="color:var(--accent);font-size:11px;"></i>
+          </div>
+          Detailed JSON Report
+        </div>
+        <div class="toggle-row">
+          <button class="toggle-btn${!showRaw ? ' on' : ''}" onclick="setRaw(false)">📋 Structured</button>
+          <button class="toggle-btn${showRaw ? ' on' : ''}"  onclick="setRaw(true)">{ } Raw</button>
+        </div>
+      </div>
+      <div class="section-body" id="json-report-body">
+        ${renderJsonReport(data)}
+      </div>
+    </div>` : ''}
+
+    <!-- GIF -->
+    ${ex.has_gif ? `
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-title">
+          <div class="section-icon" style="background:var(--violet-bg);">
+            <i class="fas fa-film" style="color:var(--violet);font-size:11px;"></i>
+          </div>
+          Session Recording
+        </div>
+      </div>
+      <div class="section-body">
+        <img class="gif-img" src="/api/agent-history/${ex.id}/gif?t=${Date.now()}" alt="Session replay">
+      </div>
+    </div>` : ''}
+
+    <!-- Steps -->
+    <div class="section-card">
+      <div class="section-head">
+        <div class="section-title">
+          <div class="section-icon" style="background:var(--amber-bg);">
+            <i class="fas fa-list-ol" style="color:var(--amber);font-size:11px;"></i>
+          </div>
+          Execution Steps
+          <span class="badge" style="background:var(--bg2);color:var(--muted);border:1px solid var(--border);">
+            ${steps.length}
+          </span>
+        </div>
+        ${steps.length > STEPS_PER_PAGE ? `
+        <div class="step-pager-row">
+          <button class="sp-btn" onclick="stepPage(-1)">‹</button>
+          <span class="sp-lbl" id="sp-label"></span>
+          <button class="sp-btn" onclick="stepPage(1)">›</button>
+        </div>` : ''}
+      </div>
+      <div class="section-body" style="padding:16px 20px;">
+        <div class="timeline" id="steps-container"></div>
+      </div>
+    </div>
+
+  </div>`;
+
+  renderSteps();
+}
+
+// ── JSON structured / raw ─────────────────────────────────────────
+function renderJsonReport(data) {
+  if (showRaw) {
+    return `<div class="json-tree">${syntaxHL(JSON.stringify(data, null, 2))}</div>`;
+  }
+  const skip = new Set(['history', 'steps', 'actions']);
+  let top = '', nested = '';
+
+  for (const [k, v] of Object.entries(data)) {
+    if (skip.has(k)) continue;
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      nested += `
+      <div style="margin-top:20px;">
+        <div style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);font-weight:600;margin-bottom:8px;">${esc(k)}</div>
+        <div class="kv-wrap">
+          <table class="kv-table">
+            ${Object.entries(v).map(([k2,v2]) => `
+            <tr>
+              <td class="kv-key">${esc(k2)}</td>
+              <td class="kv-val${typeof v2 === 'number' || typeof v2 === 'boolean' ? ' mono' : ''}">${renderVal(v2)}</td>
+            </tr>`).join('')}
+          </table>
+        </div>
+      </div>`;
+      continue;
+    }
+    top += `
+    <tr>
+      <td class="kv-key">${esc(k)}</td>
+      <td class="kv-val${typeof v === 'number' || typeof v === 'boolean' ? ' mono' : ''}">${renderVal(v)}</td>
+    </tr>`;
+  }
+
+  return `
+  <div class="json-report">
+    ${top ? `<div class="kv-wrap"><table class="kv-table">${top}</table></div>` : ''}
+    ${nested}
+  </div>`;
+}
+
+function renderVal(v) {
+  if (v === null || v === undefined) return '<span class="kv-null">null</span>';
+  if (typeof v === 'boolean') return `<span style="color:var(--violet);font-family:var(--mono);font-size:11px;">${v}</span>`;
+  if (typeof v === 'number')  return `<span style="color:var(--amber);font-family:var(--mono);font-size:11px;">${v.toLocaleString()}</span>`;
+  if (Array.isArray(v)) return `<span style="color:var(--muted);font-family:var(--mono);font-size:11px;">[${v.length} items]</span>`;
+  if (typeof v === 'object')  return `<span style="color:var(--muted);font-family:var(--mono);font-size:11px;">{object}</span>`;
+  const s = String(v);
+  return s.length > 220 ? esc(s.substring(0, 220)) + '…' : esc(s);
+}
+
+function setRaw(raw) {
+  showRaw = raw;
+  const body = document.getElementById('json-report-body');
+  if (body && currentData) body.innerHTML = renderJsonReport(currentData);
+  document.querySelectorAll('.toggle-btn').forEach((b, i) => {
+    b.classList.toggle('on', raw ? i === 1 : i === 0);
+  });
+}
+
+// ── Steps timeline ────────────────────────────────────────────────
+function renderSteps() {
+  const total = currentSteps.length;
+  const pages = Math.ceil(total / STEPS_PER_PAGE) || 1;
+  const start = (currentStepPage - 1) * STEPS_PER_PAGE;
+  const page  = currentSteps.slice(start, start + STEPS_PER_PAGE);
+  const lbl   = document.getElementById('sp-label');
+  if (lbl) lbl.textContent = total ? `${start+1}–${Math.min(start+STEPS_PER_PAGE,total)} / ${total}` : '—';
+
+  const cont = document.getElementById('steps-container');
+  if (!cont) return;
+  if (!total) {
+    cont.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:24px;">No steps recorded.</div>';
+    return;
+  }
+
+  cont.innerHTML = page.map((step, i) => {
+    const num     = start + i + 1;
+    const isLast  = i === page.length - 1;
+    const thought = step.model_output?.current_state?.thought || step.thought || step.reasoning || '';
+    const action  = step.model_output?.action || step.action || step.actions || '';
+    const actionS = typeof action  === 'object' ? JSON.stringify(action, null, 2) : String(action  || '');
+    const result  = step.result?.[0]?.extracted_content || step.result || step.output || '';
+    const resultS = typeof result  === 'object' ? JSON.stringify(result) : String(result  || '');
+    const isErr   = step.result?.[0]?.error || step.error;
+    const nc      = isErr ? 'var(--red)' : 'var(--accent)';
+    const nb      = isErr ? 'var(--red-bg)' : 'var(--accent-bg)';
+    const nbd     = isErr ? 'var(--red-bd)' : 'var(--accent-bd)';
+
+    return `
+    <div class="tl-item" style="animation-delay:${i * .05}s;">
+      <div class="tl-spine">
+        <div class="tl-num" style="background:${nb};color:${nc};border-color:${nbd};">${num}</div>
+        ${!isLast ? '<div class="tl-line"></div>' : ''}
+      </div>
+      <div class="tl-body">
+        ${thought ? `
+        <div class="tl-section">
+          <div class="tl-section-label" style="color:var(--violet);">💭 Reasoning</div>
+          <div class="tl-block">${esc(thought)}</div>
+        </div>` : ''}
+        ${actionS ? `
+        <div class="tl-section">
+          <div class="tl-section-label" style="color:var(--accent);">⚡ Action</div>
+          <div class="tl-block mono">${esc(actionS)}</div>
+        </div>` : ''}
+        ${resultS ? `
+        <div class="tl-section">
+          <div class="tl-section-label" style="color:${isErr ? 'var(--red)' : 'var(--green)'};">
+            ${isErr ? '❌ Error' : '✅ Result'}
+          </div>
+          <div class="tl-block${isErr ? ' error' : ' result'}">
+            ${esc(resultS.substring(0, 500))}${resultS.length > 500 ? '…' : ''}
+          </div>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function stepPage(dir) {
+  const pages = Math.ceil(currentSteps.length / STEPS_PER_PAGE) || 1;
+  currentStepPage = Math.max(1, Math.min(pages, currentStepPage + dir));
+  renderSteps();
+}
+
+// ── Syntax highlight ──────────────────────────────────────────────
+function syntaxHL(json) {
+  return esc(json)
+    .replace(/"([^"]+)"(?=\s*:)/g, '<span class="j-key">"$1"</span>')
+    .replace(/:\s*"([^"]*)"/g,     ': <span class="j-str">"$1"</span>')
+    .replace(/:\s*(\d+\.?\d*)/g,  ': <span class="j-num">$1</span>')
+    .replace(/:\s*(true|false)/g,  ': <span class="j-bool">$1</span>')
+    .replace(/:\s*(null)/g,        ': <span class="j-null">$1</span>');
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}
