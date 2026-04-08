@@ -879,7 +879,7 @@ def create_ui(theme_name="Soft"):
     ui_manager = WebuiManager()
 
     with gr.Blocks(
-            title="Ines QA Platform", theme=theme_map[theme_name], css=css, js=js_func,
+            title="QA Platform", theme=theme_map[theme_name], css=css, js=js_func,
     ) as demo:
         with gr.Tabs() as tabs:
             with gr.TabItem("⚙️ Agent Settings"):
@@ -1169,7 +1169,7 @@ def create_ui_with_auth(theme_name="Soft"):
     user_data = None
 
     with gr.Blocks(
-            title="Ines QA Platform", theme=theme_map[theme_name], css=css,
+            title="QA Platform", theme=theme_map[theme_name], css=css,
     ) as demo:
         create_main_content(ui_manager, auth_manager, user_data)
 

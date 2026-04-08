@@ -55,7 +55,7 @@ def create_auth_ui(auth_manager: AuthManager, on_login_success: callable):
     }
     """
     
-    with gr.Blocks(title="Ines QA Platform - Login", css=css, js=js_func) as auth_demo:
+    with gr.Blocks(title="QA Platform - Login", css=css, js=js_func) as auth_demo:
         # State for storing token
         token_state = gr.State(value="")
         user_state = gr.State(value=None)
@@ -63,7 +63,7 @@ def create_auth_ui(auth_manager: AuthManager, on_login_success: callable):
         with gr.Column(elem_classes=["auth-container"]):
             gr.Markdown(
                 """
-                # 🌐 Ines QA Platform
+                # 🌐 QA Platform
                 ### Please login or create an account
                 """,
                 elem_classes=["auth-header"]
@@ -223,7 +223,7 @@ def create_protected_ui(main_ui_func: callable, auth_manager: AuthManager, theme
     }
     """
     
-    with gr.Blocks(title="Ines QA Platform", theme=theme_map.get(theme_name, theme_map["Ocean"]), css=css, js=js_dark_mode) as demo:
+    with gr.Blocks(title="QA Platform", theme=theme_map.get(theme_name, theme_map["Ocean"]), css=css, js=js_dark_mode) as demo:
         # State variables
         token_state = gr.State(value="")
         user_state = gr.State(value=None)
@@ -233,7 +233,7 @@ def create_protected_ui(main_ui_func: callable, auth_manager: AuthManager, theme
         with gr.Column(visible=True, elem_classes=["auth-container"]) as auth_section:
             gr.Markdown(
                 """
-                # 🌐 Ines QA Platform
+                # 🌐 QA Platform
                 ### Please login or create an account
                 """,
                 elem_classes=["auth-header"]
